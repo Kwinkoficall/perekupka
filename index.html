@@ -1,3 +1,4 @@
+const API="https://empty-waterfall-f93fperekup-bot.kwink483.workers.dev"
 <!doctype html>
 <html lang="ru"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -26,13 +27,17 @@ nav button{background:none;color:#ecebe5;border-radius:0;padding:16px 0;font-siz
 .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:12px 0}.stat{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px}.stat b{display:block;font-size:30px;margin:6px 0 2px}
 .empty{text-align:center;padding:36px 16px}.empty h3{font-size:22px;margin:14px 0 6px}.bub{max-width:80%;padding:8px 12px;border-radius:14px;margin:4px 0;background:var(--card);border:1px solid var(--line)}.bub.me{background:var(--sig);color:#fff;border:0}
 .chip2{font-size:12px;padding:2px 8px;border-radius:6px;background:var(--line)}.dot{display:inline-block;width:9px;height:9px;border-radius:50%;background:var(--bad);margin-right:6px}
+#lock{position:fixed;inset:0;background:var(--bg);z-index:99;display:none;align-items:center;justify-content:center;padding:16px}
 .done{background:var(--ink);color:var(--bg)}.lock{opacity:.5}.chip{font-size:12px;padding:4px 8px;border-radius:6px;border:1px solid var(--line);background:none;color:var(--ink)}.chip.on{background:var(--ink);color:var(--bg)}
 </style></head><body>
 <header><b style="font-size:19px">Перекуп</b><span class="n" id="bal" style="font-weight:700"></span></header>
 <main id="app"></main>
-<nav id="nav"></nav><div id="modal"><div id="sheet"></div></div>
+<nav id="nav"></nav><div id="lock"></div><div id="modal"><div id="sheet"></div></div>
 <script>
 "use strict";
+// Адрес вашего Cloudflare Worker, например "https://perekup-bot.ваш-аккаунт.workers.dev". Пусто = игра без проверки подписки.
+const API="";
+let cloud=false,pushT=0,chUrl="";
 // ================= данные =================
 const MODELS={"Toyota Camry":2800000,"Toyota Corolla":2000000,"Toyota RAV4":4200000,"Toyota Land Cruiser Prado":7500000,"Hyundai Solaris":1500000,"Hyundai Elantra":1800000,"Hyundai Sonata":2400000,"Hyundai Creta":2200000,"Hyundai Tucson":3200000,"Kia Rio":1600000,"Kia Ceed":2200000,"Kia Optima":2200000,"Kia Sportage":3200000,"Lada 2114":500000,"Lada Priora":900000,"Lada Granta":1000000,"Lada Vesta":1300000,"Lada Largus":1300000,"Lada Niva Travel":1200000,"Volkswagen Polo":1700000,"Volkswagen Passat":3000000,"Volkswagen Tiguan":3400000,"Skoda Rapid":1500000,"Skoda Octavia":2200000,"Nissan Almera":1200000,"Nissan Qashqai":2800000,"Nissan X-Trail":3200000,"Mazda 3":2200000,"Mazda CX-5":3400000,"Honda Civic":2400000,"Honda CR-V":3600000,"Ford Focus":1800000,"Chevrolet Cruze":1600000,"Renault Logan":1100000,"Renault Duster":1900000,"Mitsubishi Lancer":1800000,"Mitsubishi Outlander":3000000,"Subaru Forester":3200000,"UAZ Patriot":1600000,"Audi A6":5200000,"BMW 320i":3800000,"BMW 528i":4400000,"BMW X5":7500000,"Mercedes C200":4000000,"Mercedes E200":4800000,"Lexus RX350":5600000,"Lexus LX570":9000000};
 const RARE=["BMW","Mercedes","Lexus","Audi"],COLORS=["белый","чёрный","серебристый","серый","синий","красный"],BOTS=["Ерлан","Данияр","Асель","Марат","Айгерим","Серик","Владимир","Жанна","Тимур","Руслан"];
@@ -46,7 +51,8 @@ const MARKET_MS=120e3,REG=3500,REG_H=1,TS=60e3, EXT=1.15, OWN_MIN=.5, PEN=2, MAX
 const KEY="perekup_v2";
 let S=JSON.parse(localStorage.getItem(KEY)||"null")||{bal:5e5,rep:50,bought:0,sold:0,margin:0,cars:[],market:[],deals:[],blocks:{},stages:{},demand:{},sess:{},id:1,tick:0};
 S.imgs=S.imgs||{};S.threads=S.threads||[];let imgSel="Toyota Camry";
-const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){alert("Не хватило места в памяти браузера — картинка слишком тяжёлая.")}};
+const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){alert("Не хватило места в памяти браузера — картинка слишком тяжёлая.")}
+  cloudSoon()};
 const R=(a,b)=>a+Math.random()*(b-a), pick=a=>a[Math.floor(Math.random()*a.length)], fmt=n=>Math.round(n).toLocaleString("ru-RU")+" ₽";
 // ================= домен =================
 function clean(name,year,km){const age=Math.max(0,YEAR-year);let v=MODELS[name]*Math.pow(.9,age);v*=Math.max(.55,1-Math.max(0,km-age*15e3)/9e5);return Math.floor(v/1e3)*1e3}
@@ -168,6 +174,29 @@ function mktPrice(c){const odo=c.defects.some(d=>d.key==="odometer"&&d.disc),bas
 function mktLine(c,price){const m=mktPrice(c),p=Math.round((price-m)/m*100);
   const t=Math.abs(p)<=2?"<span>по рынку</span>":p<0?`<span style="color:var(--good);font-weight:600">дешевле рынка на ${-p}%</span>`:`<span class="bad" style="font-weight:600">дороже рынка на ${p}%</span>`;
   return`<div class="mute" style="font-size:13px">Рыночная ≈ ${fmt(m)} · ${t}</div>`}
+// ================= подписка на канал + облачное сохранение =================
+const tg=window.Telegram?.WebApp;
+async function apiCall(path,method,body){
+  const r=await fetch(API+path,{method,headers:{"Content-Type":"application/json","X-Init-Data":tg?.initData||""},body:body?JSON.stringify(body):undefined});
+  const j=await r.json().catch(()=>({}));if(!r.ok){const e=new Error(j.error||"Ошибка");e.status=r.status;throw e}return j}
+const lock=h=>{const l=$("#lock");l.innerHTML=`<div class="card" style="max-width:420px;text-align:center;margin:0">${h}</div>`;l.style.display="flex"};
+const unlock=()=>{$("#lock").style.display="none"};
+const lockSub=()=>lock(`<h2 style="margin:0 0 8px">Нужна подписка</h2><p class="mute">Чтобы играть, подпишитесь на наш канал. Затем вернитесь сюда и нажмите «Проверить».</p>
+  <div class="gap"><button class="s" data-sub="1">Подписаться на канал</button></div><div class="gap"><button class="g" data-recheck="1">Я подписался — проверить</button></div>`);
+const lockErr=m=>lock(`<h2 style="margin:0 0 8px">Не получилось</h2><p class="mute">${m}</p><div class="gap"><button class="g" data-recheck="1">Повторить</button></div>`);
+function cloudSoon(){if(!cloud)return;clearTimeout(pushT);pushT=setTimeout(pushNow,3000)}
+function pushNow(){const{imgs,...st}=S;apiCall("/api/save","PUT",{state:st}).catch(e=>{if(e.status===403){cloud=false;lockSub()}})}
+async function recheck(){try{const r=await apiCall("/api/auth","POST");if(!r.subscribed){cloud=false;chUrl=r.channelUrl||chUrl;lockSub()}}catch(e){}}
+async function boot(){
+  if(!API){render();return}
+  if(!tg?.initData){lockErr("Откройте игру через нашего бота в Telegram.");return}
+  lock('<p class="mute">Проверяем подписку…</p>');
+  try{const r=await apiCall("/api/auth","POST");chUrl=r.channelUrl||"";
+    if(!r.subscribed){cloud=false;lockSub();return}
+    if(r.save&&r.save.state){const keep=S.imgs;S=Object.assign({threads:[],imgs:{}},r.save.state);S.imgs=keep||{}}
+    cloud=true;unlock();render();cloudSoon();
+    if(!window._rc)window._rc=setInterval(recheck,300e3)
+  }catch(e){lockErr(e.status===502?"Бот ещё не настроен: он должен быть администратором канала.":"Нет связи с сервером. Проверьте интернет.")}}
 // ================= UI =================
 const $=s=>document.querySelector(s);let tab="market",flt={brand:"",sort:"new"},H=null,T=null,flash={};
 const TABS=[["market","Маркет"],["garage","Гараж"],["chat","Чаты"],["service","Сервис"],["profile","Профиль"]];
@@ -238,6 +267,8 @@ function drawHaggle(){
 const closeM=()=>{$("#modal").classList.remove("open");H=null;T=null;render()};
 function act(e){
   const t=e.target.closest("button,[data-open],[data-thread]");if(!t)return;const d=t.dataset;
+  if(d.sub){chUrl&&(tg?.openTelegramLink?tg.openTelegramLink(chUrl):window.open(chUrl,"_blank"));return}
+  if(d.recheck){boot();return}
   if(d.tab){tab=d.tab;flash={};render();return}
   if(d.open){openHaggle(+d.open);return}
   if(d.thread){T=+d.thread;terr="";S.threads.find(x=>x.id===T).unread=false;save();drawNav();drawThread();return}
@@ -292,5 +323,5 @@ setInterval(()=>{settle();const ch=tickSales();if(H||T){if(ch)drawNav();return}
   if(ch&&tab!=="market"){render();return}
   document.querySelectorAll("[data-until]").forEach(el=>{const s=Math.max(0,Math.round((+el.dataset.until-Date.now())/1e3));el.textContent=Math.floor(s/60)+":"+String(s%60).padStart(2,"0");if(!s)render()});if(ch)drawNav()},1000);
 try{Telegram.WebApp.ready();Telegram.WebApp.expand()}catch(e){}
-render();
+boot();
 </script></body></html>
