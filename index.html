@@ -1,0 +1,296 @@
+<!doctype html>
+<html lang="ru"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Перекуп</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..800&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#ecebe5;--ink:#1d2327;--tag:#ffd23f;--sig:#2150d6;--bad:#c8372d;--mute:#6b7176;--line:#d3d1c9;--card:#fff;--good:#1f8a4c}
+@media(prefers-color-scheme:dark){:root{--bg:#171a1d;--ink:#ecebe5;--line:#32383d;--card:#21262a;--mute:#9aa0a5;--good:#4cc383}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.4 Archivo,system-ui,sans-serif;padding-top:env(safe-area-inset-top);padding-bottom:calc(64px + env(safe-area-inset-bottom))}
+main{max-width:600px;margin:auto;padding:12px 16px}header{position:sticky;top:0;background:var(--bg);display:flex;justify-content:space-between;align-items:baseline;padding:12px 16px;border-bottom:1px solid var(--line);z-index:5;max-width:600px;margin:auto}
+.n{font-variant-numeric:tabular-nums;font-stretch:75%}.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px;margin-bottom:10px}
+.row{display:flex;justify-content:space-between;gap:8px;align-items:flex-start}.mute{color:var(--mute);font-size:14px}.bad{color:var(--bad)}.sig{color:var(--sig);font-weight:600}
+.tag{background:var(--tag);color:#1d2327;font-weight:700;padding:2px 8px 2px 14px;clip-path:polygon(8px 0,100% 0,100% 100%,8px 100%,0 50%);white-space:nowrap}
+button,select,input{font:inherit;color:var(--ink)}button{border:0;border-radius:8px;padding:9px 14px;font-weight:600;background:var(--ink);color:var(--bg);cursor:pointer}
+button.s{background:var(--sig);color:#fff}button.g{background:none;border:1px solid var(--ink);color:var(--ink)}button:disabled{opacity:.4}button:active{transform:translateY(1px)}
+input,select{border:1px solid var(--line);border-radius:8px;padding:8px 10px;background:var(--card)}input[type=number]{width:100%}
+:focus-visible{outline:2px solid var(--sig);outline-offset:2px}.gap{display:flex;gap:8px;margin-top:8px;flex-wrap:wrap}.gap>*{flex:1}
+nav{position:fixed;bottom:0;left:0;right:0;background:#1d2327;display:grid;grid-template-columns:repeat(5,1fr);padding-bottom:env(safe-area-inset-bottom)}
+nav button{background:none;color:#ecebe5;border-radius:0;padding:16px 0;font-size:14px;position:relative}.badge{position:absolute;top:8px;right:calc(50% - 26px);background:var(--bad);color:#fff;font-size:11px;min-width:17px;height:17px;border-radius:9px;line-height:17px;text-align:center}nav button.on{background:var(--sig)}
+#modal{position:fixed;inset:0;background:#0009;display:none;align-items:flex-end;z-index:9}#modal.open{display:flex}
+#sheet{background:var(--bg);width:100%;max-width:600px;margin:auto;max-height:90vh;overflow:auto;border-radius:14px 14px 0 0;padding:16px}
+.log{border-left:2px solid var(--line);padding-left:10px;font-size:14px;min-height:20px;margin:8px 0}.bar{height:8px;background:var(--line);border-radius:4px}.bar i{display:block;height:8px;background:var(--sig);border-radius:4px}
+.plate{display:inline-block;border:2px solid var(--ink);border-radius:5px;padding:1px 10px;margin:4px 0;background:#fff;color:#1d2327;font-weight:700;letter-spacing:1px;font-size:17px}
+.pic{background:linear-gradient(var(--line),var(--card));border-radius:8px;margin-bottom:8px;padding:6px 4px 0;overflow:hidden}.pic img{display:block;margin:auto;width:100%;max-height:170px;object-fit:cover;border-radius:6px}.pic svg{display:block;margin:auto;width:100%;max-height:150px}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:12px 0}.stat{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px}.stat b{display:block;font-size:30px;margin:6px 0 2px}
+.empty{text-align:center;padding:36px 16px}.empty h3{font-size:22px;margin:14px 0 6px}.bub{max-width:80%;padding:8px 12px;border-radius:14px;margin:4px 0;background:var(--card);border:1px solid var(--line)}.bub.me{background:var(--sig);color:#fff;border:0}
+.chip2{font-size:12px;padding:2px 8px;border-radius:6px;background:var(--line)}.dot{display:inline-block;width:9px;height:9px;border-radius:50%;background:var(--bad);margin-right:6px}
+.done{background:var(--ink);color:var(--bg)}.lock{opacity:.5}.chip{font-size:12px;padding:4px 8px;border-radius:6px;border:1px solid var(--line);background:none;color:var(--ink)}.chip.on{background:var(--ink);color:var(--bg)}
+</style></head><body>
+<header><b style="font-size:19px">Перекуп</b><span class="n" id="bal" style="font-weight:700"></span></header>
+<main id="app"></main>
+<nav id="nav"></nav><div id="modal"><div id="sheet"></div></div>
+<script>
+"use strict";
+// ================= данные =================
+const MODELS={"Toyota Camry":2800000,"Toyota Corolla":2000000,"Toyota RAV4":4200000,"Toyota Land Cruiser Prado":7500000,"Hyundai Solaris":1500000,"Hyundai Elantra":1800000,"Hyundai Sonata":2400000,"Hyundai Creta":2200000,"Hyundai Tucson":3200000,"Kia Rio":1600000,"Kia Ceed":2200000,"Kia Optima":2200000,"Kia Sportage":3200000,"Lada 2114":500000,"Lada Priora":900000,"Lada Granta":1000000,"Lada Vesta":1300000,"Lada Largus":1300000,"Lada Niva Travel":1200000,"Volkswagen Polo":1700000,"Volkswagen Passat":3000000,"Volkswagen Tiguan":3400000,"Skoda Rapid":1500000,"Skoda Octavia":2200000,"Nissan Almera":1200000,"Nissan Qashqai":2800000,"Nissan X-Trail":3200000,"Mazda 3":2200000,"Mazda CX-5":3400000,"Honda Civic":2400000,"Honda CR-V":3600000,"Ford Focus":1800000,"Chevrolet Cruze":1600000,"Renault Logan":1100000,"Renault Duster":1900000,"Mitsubishi Lancer":1800000,"Mitsubishi Outlander":3000000,"Subaru Forester":3200000,"UAZ Patriot":1600000,"Audi A6":5200000,"BMW 320i":3800000,"BMW 528i":4400000,"BMW X5":7500000,"Mercedes C200":4000000,"Mercedes E200":4800000,"Lexus RX350":5600000,"Lexus LX570":9000000};
+const RARE=["BMW","Mercedes","Lexus","Audi"],COLORS=["белый","чёрный","серебристый","серый","синий","красный"],BOTS=["Ерлан","Данияр","Асель","Марат","Айгерим","Серик","Владимир","Жанна","Тимур","Руслан"];
+const DEF={carb_knock:{n:"Стучит двигатель",c:[16e3,5e4],h:.2,r:1,hr:6,sv:2},paint_wing:{n:"Крашеное крыло",c:[8e3,24e3],h:.5,r:1,hr:8,sv:1},rusty_floor:{n:"Гнилое днище",c:[5e4,12e4],h:.7,r:1,hr:24,sv:3},
+ welded_body:{n:"Переваренный кузов",c:[8e4,18e4],h:.85,r:1,hr:36,sv:4},cracked_block:{n:"Треснутый блок цилиндров",c:[14e4,32e4],h:.9,r:1,hr:48,sv:5},odometer:{n:"Скручен пробег",c:[0,0],h:.95,r:0,hr:0,sv:3}};
+const STAGES=[{k:"foundation",n:"Фундамент",c:6e5,h:4,req:[],cm:1,tm:1},{k:"walls",n:"Стены и кровля",c:1e6,h:6,req:["foundation"],cm:1,tm:1},{k:"lifts",n:"Подъёмники",c:8e5,h:2,req:["walls"],cm:.8,tm:.6},
+ {k:"tools",n:"Профессиональный инструмент",c:12e5,h:2,req:["lifts"],cm:.7,tm:.7},{k:"mechanics",n:"Наём мастеров",c:16e5,h:4,req:["tools"],cm:.8,tm:.6}];
+const MIN={"Hyundai Creta":2016,"Hyundai Solaris":2010,"Kia Ceed":2007,"Lada Vesta":2015,"Lada Largus":2012,"Lada Niva Travel":2021,"Toyota RAV4":2006,"Skoda Rapid":2012,"Nissan Qashqai":2007,"Mazda CX-5":2012,"BMW X5":2006,"Lexus LX570":2008,"Honda Civic":2006,"Renault Duster":2011,"Lada Granta":2011,"Lada Priora":2007,"Mercedes C200":2007,"BMW 320i":2005,"Kia Sportage":2005,"Hyundai Tucson":2005};
+const MARKET_MS=120e3,REG=3500,REG_H=1,TS=60e3, EXT=1.15, OWN_MIN=.5, PEN=2, MAXL=40, ATT=4, BLOCK=30*60e3, INSPECT=3e3, YEAR=2026;
+// ================= состояние =================
+const KEY="perekup_v2";
+let S=JSON.parse(localStorage.getItem(KEY)||"null")||{bal:5e5,rep:50,bought:0,sold:0,margin:0,cars:[],market:[],deals:[],blocks:{},stages:{},demand:{},sess:{},id:1,tick:0};
+S.imgs=S.imgs||{};S.threads=S.threads||[];let imgSel="Toyota Camry";
+const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){alert("Не хватило места в памяти браузера — картинка слишком тяжёлая.")}};
+const R=(a,b)=>a+Math.random()*(b-a), pick=a=>a[Math.floor(Math.random()*a.length)], fmt=n=>Math.round(n).toLocaleString("ru-RU")+" ₽";
+// ================= домен =================
+function clean(name,year,km){const age=Math.max(0,YEAR-year);let v=MODELS[name]*Math.pow(.9,age);v*=Math.max(.55,1-Math.max(0,km-age*15e3)/9e5);return Math.floor(v/1e3)*1e3}
+const pen=(c,d)=>d.key==="odometer"?c*.12:d.cost*PEN, valueWith=(c,ds)=>Math.max(3e4,c-ds.reduce((s,d)=>s+pen(c,d),0));
+function gen(){
+  const name=pick(Object.keys(MODELS)),[brand,model]=[name.split(" ")[0],name.slice(name.indexOf(" ")+1)],year=Math.floor(R(MIN[name]||2004,YEAR)),age=YEAR-year,km=Math.max(8e3,Math.floor(age*R(8e3,28e3))),cv=clean(name,year,km);
+  const junk=Math.random()<.15,nd=junk?2+Math.floor(R(0,3)):pick([0,0,1,1,2]),keys=Object.keys(DEF).sort(()=>Math.random()-.5).slice(0,nd);
+  const ds=keys.map(k=>{const hid=Math.random()<DEF[k].h;return{id:S.id++,key:k,cost:Math.floor(R(...DEF[k].c)/1e3)*1e3,declared:!hid,disc:!hid,rep:false}});
+  const bot={name:pick(BOTS),g:+R(0,1).toFixed(2),u:+R(0,1).toFixed(2),s:+R(0,1).toFixed(2)};
+  const rare=RARE.includes(brand)&&!junk&&Math.random()<.3,known=valueWith(cv,ds.filter(d=>d.declared));
+  const ask=known*(.95+.25*bot.g-.15*bot.u+(rare?.3:0))*(S.demand[brand]||1);
+  return{id:S.id++,brand,model,year,color:pick(COLORS),owners:pick([1,1,2,2,3,4]),kmReal:km,kmShown:ds.some(d=>d.key==="odometer")?Math.floor(km*R(.4,.65)):km,clean:cv,ask:Math.floor(ask/1e3)*1e3,rare,bot,defects:ds,status:"listed",until:0,bought:0,inv:0,t:Date.now()};
+}
+function ensureMarket(){
+  const now=Date.now();
+  [...new Set(Object.keys(MODELS).map(n=>n.split(" ")[0]))].forEach(b=>{if(!S.demand[b])S.demand[b]=1});
+  if(now-S.tick>MARKET_MS){S.tick=now;for(const b in S.demand)S.demand[b]=Math.min(1.35,Math.max(.7,S.demand[b]+R(-.05,.05)));
+    for(let i=0;i<3&&S.market.length;i++)S.market.splice(Math.floor(R(0,S.market.length)),1)}
+  while(S.market.length<MAXL)S.market.push(gen());
+}
+const floorP=(a,b)=>Math.floor(a*(1-Math.min(.28,Math.max(.02,.04+.22*b.u-.08*b.g))));
+function haggle(offer,car,fl,att,arg,last){
+  const{g,u,s}=car.bot,eff=Math.max(car.ask*.6,fl-arg*(1-s));
+  if(offer>=eff)return{k:"accept",p:offer,m:"Ладно, по рукам."};
+  if(offer/eff<.72+.12*s+.06*g&&Math.random()<.5+.4*g)return{k:"insult",m:"Вы издеваетесь? Разговор окончен."};
+  const top=last||car.ask,conc=Math.min(.9,.35*(1-s)+.12*att);let c=Math.max(eff,top-(top-eff)*conc);c=Math.floor(c/1e3)*1e3||c;
+  if(u>.6){c=Math.max(eff,Math.floor(c*.98));return{k:"cond",p:c,m:`Скину до ${fmt(c)}, если заберёте сегодня.`}}
+  return{k:"counter",p:c,m:`Могу ${fmt(c)}, ниже не уговаривайте.`};
+}
+const doneKeys=()=>Object.keys(S.stages).filter(k=>S.stages[k].done);
+const canStart=(st,dn)=>!S.stages[st.k]&&st.req.every(r=>dn.includes(r));
+const mods=()=>{let c=1,t=1;doneKeys().forEach(k=>{const s=STAGES.find(x=>x.k===k);c*=s.cm;t*=s.tm});return[c,t]};
+const operational=()=>["foundation","walls","lifts"].every(k=>doneKeys().includes(k));
+function settle(){const t=Date.now();let ch=false;
+  S.cars.forEach(c=>{if(c.status==="transit"&&c.until<=t){c.status="idle";ch=true}
+    if(c.status==="reg"&&c.until<=t){c.status="idle";c.plate=c.pend;c.pend=null;ch=true}
+    if(c.status==="service"&&c.until<=t){c.defects.forEach(d=>{if(d.fix&&d.fix<=t){d.rep=true;d.fix=0}});c.status="idle";ch=true}});
+  for(const k in S.stages)if(!S.stages[k].done&&S.stages[k].fin<=t){S.stages[k].done=true;ch=true}
+  if(ch)save()}
+// ================= рисунок машины =================
+const TYPE=Object.fromEntries([...["Toyota RAV4","Toyota Land Cruiser Prado","Hyundai Creta","Hyundai Tucson","Kia Sportage","Lada Largus","Lada Niva Travel","Volkswagen Tiguan","Nissan Qashqai","Nissan X-Trail","Mazda CX-5","Honda CR-V","Renault Duster","Mitsubishi Outlander","Subaru Forester","UAZ Patriot","BMW X5","Lexus RX350","Lexus LX570"].map(k=>[k,"suv"]),
+ ...["Kia Rio","Kia Ceed","Lada 2114","Mazda 3","Ford Focus","Skoda Octavia","Renault Logan"].map(k=>[k,"hatch"])]),PAINT={"белый":"#f2f2ee","чёрный":"#25282c","серебристый":"#c3c7cb","серый":"#8a9096","синий":"#2f55c4","красный":"#c0342b"};
+const BODY={sedan:"M10 80 L10 64 Q10 57 19 55 L52 49 L76 27 Q80 24 86 24 L150 24 Q156 24 161 28 L186 49 L224 55 Q232 57 232 65 L232 80 Z",
+ hatch:"M10 80 L10 58 Q12 50 20 40 L40 27 Q44 24 50 24 L150 24 Q156 24 161 28 L186 49 L224 55 Q232 57 232 65 L232 80 Z",
+ suv:"M10 82 L10 52 Q10 44 18 42 L30 28 Q34 20 42 20 L158 20 Q165 20 170 26 L190 48 L226 54 Q234 56 234 64 L234 82 Z"};
+const GLASS={sedan:"M84 31 L150 31 L170 48 L66 48 Z",hatch:"M44 31 L150 31 L172 48 L24 48 Z",suv:"M40 26 L156 26 L174 46 L24 46 Z"};
+const DEFSVG={rusty_floor:'<g fill="#8a3f16"><ellipse cx="96" cy="77" rx="9" ry="3"/><ellipse cx="124" cy="78" rx="12" ry="2.5"/><ellipse cx="146" cy="77" rx="6" ry="3"/></g>',
+ paint_wing:'<path d="M190 52 L224 57 Q229 59 229 65 L229 76 L190 76 Z" style="fill:#fff;opacity:.3;stroke:#fff;stroke-dasharray:3 2"/>',
+ welded_body:'<path d="M118 50 V78" stroke="#e07b1a" stroke-width="2.5" stroke-dasharray="3 2"/>',
+ carb_knock:'<g fill="#777" opacity=".65"><circle cx="212" cy="46" r="5"/><circle cx="220" cy="38" r="4"/><circle cx="228" cy="30" r="3"/></g>',
+ cracked_block:'<path d="M200 55 l5 5 l-4 4 l6 6" stroke="#111" stroke-width="1.6" fill="none"/>'};
+function carSvg(c){
+  const t=TYPE[c.brand+" "+c.model]||"sedan",col=PAINT[c.color]||"#888",by=t==="suv"?82:80,pil=t==="suv"?"M100 26 V46":"M110 31 V48";
+  const wheel=x=>`<circle cx="${x}" cy="${by}" r="18" fill="#14171a"/><circle cx="${x}" cy="${by}" r="15" fill="#2a2d31"/><circle cx="${x}" cy="${by}" r="8" fill="#b5bbc0"/><circle cx="${x}" cy="${by}" r="3" fill="#6b7176"/>`;
+  const dd=c.defects.filter(d=>d.disc&&!d.rep).map(d=>DEFSVG[d.key]||"").join("");
+  const key=c.brand+" "+c.model,src=S.imgs[key]||`img/${key.replace(/\s/g,"-")}.jpg`;
+  const photo=`<img alt="${key}" src="${src}" style="display:none" onload="this.style.display='block';this.nextElementSibling.style.display='none'" onerror="if(!this.dataset.t&&this.src.endsWith('.jpg')){this.dataset.t=1;this.src=this.src.replace('.jpg','.png')}">`;
+  return`<div class="pic">${photo}<svg viewBox="0 0 242 108" role="img" aria-label="${c.brand} ${c.model}, ${c.color}"><ellipse cx="121" cy="99" rx="102" ry="5" fill="#0003"/>
+  <path d="${BODY[t]}" fill="${col}" stroke="#0004" stroke-width="1.2"/><path d="${GLASS[t]}" fill="#9fc3d9" stroke="#0004"/><path d="${pil}" stroke="#0005" stroke-width="2"/>
+  <path d="M78 52 V78 M160 52 V78" stroke="#0003" fill="none"/><rect x="224" y="58" width="8" height="5" fill="#ffe9a8"/><rect x="10" y="62" width="5" height="6" fill="#c0342b"/>
+  ${wheel(60)}${wheel(180)}${dd}</svg></div>`;
+}
+// ================= покупатели-боты =================
+function closeThreads(car,why){S.threads.forEach(t=>{if(t.car===car&&(t.st==="open"||t.st==="ready")){t.st="closed";t.msgs.push({f:"s",t:why})}})}
+function tickSales(){const now=Date.now();let ch=false;
+  S.cars.forEach(c=>{if(c.status!=="for_sale"||!c.listed||c.listed.next>now)return;
+    c.listed.next=now+R(15e3,35e3);if(S.threads.filter(t=>t.car===c.id&&(t.st==="open"||t.st==="ready")).length>=3)return;
+    const known=c.defects.filter(d=>!d.rep&&d.disc),per=valueWith(c.clean,c.listed.disclose?known:[])*(c.plate?1.04:1),ratio=c.listed.price/per;
+    if(Math.random()>(ratio<=.9?.95:ratio<=1?.7:ratio<=1.15?.4:.15))return;
+    const g=Math.random(),bmax=Math.floor(per*(.88+S.rep*.002)*(1.05-.1*g)*R(.96,1.04)/1e3)*1e3,pr=c.listed.price;
+    const th={id:S.id++,car:c.id,title:`${c.brand} ${c.model} ${c.year}`,buyer:pick(BOTS),bmax,rounds:0,t:now,unread:true,msgs:[],st:"open",offer:0,price:0};
+    if(pr<=bmax*.98){th.st="ready";th.price=pr;th.msgs.push({f:"b",t:`Здравствуйте! Беру за ${fmt(pr)}. Когда можно забрать?`})}
+    else if(pr<=bmax*1.15){th.offer=Math.floor(bmax*R(.9,.97)/1e3)*1e3;th.msgs.push({f:"b",t:`Здравствуйте! Дороговато. Готов дать ${fmt(th.offer)}.`})}
+    else{th.offer=Math.floor(bmax*R(.8,.9)/1e3)*1e3;th.msgs.push({f:"b",t:`Цена нереальная. Дам ${fmt(th.offer)}, не больше.`})}
+    S.threads.unshift(th);ch=true});
+  S.threads.forEach(t=>{if((t.st==="open"||t.st==="ready")&&now-t.t>24e4){t.st="closed";t.msgs.push({f:"s",t:"Покупатель потерял интерес."});ch=true}});
+  if(S.threads.length>40)S.threads.length=40;if(ch)save();return ch}
+function complete(th,price){const c=S.cars.find(x=>x.id===th.car);
+  if(!c||c.status!=="for_sale"){th.st="closed";return}
+  const known=c.defects.filter(d=>!d.rep&&d.disc),hid=c.listed.disclose?[]:known;
+  if(hid.some(()=>Math.random()<.3)){th.st="closed";th.msgs.push({f:"b",t:"Мастер нашёл скрытый дефект. Сделки не будет."},{f:"s",t:"Покупатель ушёл."});closeThreads(c.id,"");return}
+  S.bal+=price;S.sold++;const m=price-c.bought-c.inv;S.margin+=m;
+  const dl=hid.length?-hid.reduce((s,x)=>s+DEF[x.key].sv*4,0):(known.length?1:.5);S.rep=Math.max(0,Math.min(100,S.rep+dl));
+  S.deals.unshift({kind:"sell",title:th.title,price,margin:m,fraud:!!hid.length});
+  th.st="done";th.msgs.push({f:"s",t:`Сделка: продано за ${fmt(price)}, маржа ${fmt(m)}${hid.length?" · репутация упала из-за скрытых дефектов":""}`});
+  closeThreads(c.id,"Машина уже продана.");S.cars=S.cars.filter(x=>x!==c)}
+function threadAct(d){const th=S.threads.find(x=>x.id===T);if(!th)return;terr="";const say=(f,t)=>{th.msgs.push({f,t});th.t=Date.now()};
+  if(d.tdeal){say("me","Договорились.");complete(th,th.price)}
+  if(d.taccept){say("me",`Согласен на ${fmt(th.offer)}.`);complete(th,th.offer)}
+  if(d.tdecl){say("me","Спасибо, не подходит.");th.st="closed"}
+  if(d.tcounter){const p=+$("#tc").value;if(!p)terr="Укажите цену";else{say("me",`Моя цена — ${fmt(p)}.`);th.rounds++;
+    if(p<=th.bmax){th.st="ready";th.price=p;say("b",`Хорошо, беру за ${fmt(p)}.`)}
+    else if(th.rounds>=3||(p>th.bmax*1.15&&Math.random()<.6)){th.st="closed";say("b","Не сошлись в цене, всего доброго.")}
+    else{th.offer=Math.floor(Math.min(th.bmax,th.offer+(th.bmax-th.offer)*.5)/1e3)*1e3;say("b",`Могу ${fmt(th.offer)}, не больше.`)}}}
+  save();drawNav();$("#bal").textContent=fmt(S.bal);drawThread()}
+let terr="";
+function drawThread(){const th=S.threads.find(x=>x.id===T);
+  const log=th.msgs.filter(m=>m.t).map(m=>m.f==="s"?`<div class="mute" style="text-align:center;font-size:13px;margin:6px 0">${m.t}</div>`:`<div style="display:flex;justify-content:${m.f==="me"?"flex-end":"flex-start"}"><div class="bub ${m.f}">${m.t}</div></div>`).join("");
+  const acts=th.st==="ready"?`<div class="gap"><button class="s" data-tdeal="1" style="flex:2">Заключить сделку · ${fmt(th.price)}</button><button class="g" data-tdecl="1">Отказать</button></div>`:
+   th.st==="open"?`<div class="gap" style="align-items:center"><input type="number" step="1000" id="tc" value="${th.offer}"><button data-tcounter="1" style="flex:0 0 auto">Предложить</button></div><div class="gap"><button class="s" data-taccept="1" style="flex:2">Принять ${fmt(th.offer)}</button><button class="g" data-tdecl="1">Отказать</button></div>`:"";
+  $("#sheet").innerHTML=`<div class="row"><h2 style="margin:0">${th.buyer}</h2><span class="chip2">${th.title}</span></div><div style="margin:10px 0">${log}</div><div class="bad" style="font-size:14px">${terr}</div>${acts}<div class="gap"><button class="g" data-close="1">Закрыть</button></div>`;
+  $("#modal").classList.add("open")}
+function vChat(){
+  const o=S.threads.filter(t=>t.st==="open").length,r=S.threads.filter(t=>t.st==="ready").length,n=S.cars.filter(c=>c.status==="for_sale").length;
+  const ST={open:"Торгуется",ready:"Готов к сделке",closed:"Закрыт",done:"Продано"},ord={ready:0,open:1,done:2,closed:3};
+  const list=[...S.threads].sort((a,b)=>ord[a.st]-ord[b.st]||b.t-a.t);
+  return`<h2 style="margin:4px 0;font-size:30px">Сообщения</h2><p class="mute" style="margin:0">Предложения покупателей и ваши договорённости.</p>
+  <div class="stats"><div class="stat"><span class="mute">Диалоги</span><b class="n">${o}</b><span class="mute" style="font-size:13px">Активные предложения</span></div>
+  <div class="stat"><span class="mute">Договорились</span><b class="n">${r}</b><span class="mute" style="font-size:13px">Покупатели готовы к сделке</span></div>
+  <div class="stat"><span class="mute">В продаже</span><b class="n">${n}</b><span class="mute" style="font-size:13px">Машины ждут покупателей</span></div></div>`+
+  (list.length?list.map(t=>`<div class="card" data-thread="${t.id}" style="cursor:pointer;${t.st==="closed"?"opacity:.6":""}"><div class="row"><b>${t.unread?'<i class="dot"></i>':""}${t.buyer}</b><span class="chip2">${ST[t.st]}</span></div>
+   <div class="mute">${t.title}</div><div class="row" style="margin-top:4px"><span style="font-size:14px">${[...t.msgs].reverse().find(m=>m.f==="b")?.t||""}</span>${t.st==="ready"?`<span class="tag n">${fmt(t.price)}</span>`:t.st==="open"?`<span class="tag n">${fmt(t.offer)}</span>`:""}</div></div>`).join(""):
+  `<div class="card empty"><svg width="76" height="54" viewBox="0 0 76 54" fill="none" stroke="var(--sig)" stroke-width="2"><rect x="2" y="2" width="72" height="50"/><path d="M2 2 L38 30 L74 2 M2 52 L28 24 M74 52 L48 24"/><circle cx="38" cy="27" r="6" fill="var(--sig)"/></svg>
+   <h3>Пока нет сообщений</h3><p class="mute">Выставьте машину на продажу.<br>Предложения покупателей появятся здесь.</p><button class="s" data-tab="garage">Перейти в гараж</button></div>`)}
+// ================= рыночная цена =================
+// Оценка по тому, что видит игрок: заявленный пробег и найденные дефекты. Скрытое в неё не входит.
+function mktPrice(c){const odo=c.defects.some(d=>d.key==="odometer"&&d.disc),base=clean(c.brand+" "+c.model,c.year,odo?c.kmReal:c.kmShown);
+  const v=valueWith(base,c.defects.filter(d=>d.disc&&!d.rep))*(S.demand[c.brand]||1)*(c.plate?1.04:1);return Math.round(v/1e3)*1e3}
+function mktLine(c,price){const m=mktPrice(c),p=Math.round((price-m)/m*100);
+  const t=Math.abs(p)<=2?"<span>по рынку</span>":p<0?`<span style="color:var(--good);font-weight:600">дешевле рынка на ${-p}%</span>`:`<span class="bad" style="font-weight:600">дороже рынка на ${p}%</span>`;
+  return`<div class="mute" style="font-size:13px">Рыночная ≈ ${fmt(m)} · ${t}</div>`}
+// ================= UI =================
+const $=s=>document.querySelector(s);let tab="market",flt={brand:"",sort:"new"},H=null,T=null,flash={};
+const TABS=[["market","Маркет"],["garage","Гараж"],["chat","Чаты"],["service","Сервис"],["profile","Профиль"]];
+const vis=c=>c.defects.filter(d=>d.disc);
+const defHtml=c=>{const v=vis(c);return v.length?"<div style='font-size:14px'>"+v.map(d=>`<div class="${d.rep?"mute":"bad"}" ${d.rep?"style='text-decoration:line-through'":""}>${DEF[d.key].n}${DEF[d.key].r?` · ремонт ~${fmt(d.cost)}`:""}</div>`).join("")+"</div>":"<div class='mute'>Явных дефектов нет</div>"};
+const cd=u=>{const s=Math.max(0,Math.round((u-Date.now())/1e3));return`<span class="n" data-until="${u}">${Math.floor(s/60)}:${String(s%60).padStart(2,"0")}</span>`};
+function drawNav(){const u=S.threads.filter(t=>t.unread).length;
+  $("#nav").innerHTML=TABS.map(([k,l])=>`<button class="${tab===k?"on":""}" data-tab="${k}">${l}${k==="chat"&&u?`<span class="badge">${u}</span>`:""}</button>`).join("")}
+function render(){
+  settle();ensureMarket();$("#bal").textContent=fmt(S.bal);
+  drawNav();
+  $("#app").innerHTML=({market:vMarket,garage:vGarage,chat:vChat,service:vService,profile:vProfile})[tab]();save();
+}
+function vMarket(){
+  let l=S.market.filter(c=>!flt.brand||c.brand===flt.brand);
+  l.sort((a,b)=>flt.sort==="price"?a.ask-b.ask:flt.sort==="year"?b.year-a.year:b.t-a.t);
+  const br=["",...new Set(Object.keys(MODELS).map(n=>n.split(" ")[0]))].sort();
+  return`<div class="gap" style="margin:0 0 10px"><select data-f="brand">${br.map(b=>`<option value="${b}" ${flt.brand===b?"selected":""}>${b||"Все марки"}</option>`).join("")}</select>
+  <select data-f="sort">${[["new","Новые"],["price","Дешевле"],["year","Свежее"]].map(([v,t])=>`<option value="${v}" ${flt.sort===v?"selected":""}>${t}</option>`).join("")}</select></div>`+
+  l.map(c=>`<div class="card" data-open="${c.id}" style="cursor:pointer">${carSvg(c)}<div class="row"><div><b>${c.brand} ${c.model}, ${c.year}</b><div class="mute">${fmt(c.kmShown).replace(" ₽","")} км · ${c.color} · ${c.owners} влад.</div>${mktLine(c,c.ask)}</div><span class="tag n">${fmt(c.ask)}</span></div>
+  ${vis(c).length?`<div class="bad" style="font-size:12px;margin-top:4px">${vis(c).map(d=>DEF[d.key].n).join(", ")}</div>`:""}</div>`).join("")||"<p class='mute'>Лента обновляется.</p>";
+}
+function plate(){const L="АВЕКМНОРСТУХ",r=()=>L[Math.floor(Math.random()*L.length)];return`${r()}${100+Math.floor(Math.random()*899)}${r()}${r()} ${pick(["77","78","50","16","02","66","23","54","99","116","178"])}`}
+function vGarage(){
+  const L={transit:"В пути",idle:"Готова",service:"В сервисе",reg:"Постановка на учёт",for_sale:"На продаже"};
+  if(!S.cars.length)return"<p class='mute'>Гараж пуст. Купите машину на маркетплейсе.</p>";
+  return S.cars.map(c=>`<div class="card">${carSvg(c)}<div class="row"><b>${c.brand} ${c.model}, ${c.year}${c.keep?" · моя":""}</b><span style="font-size:14px">${L[c.status]} ${c.until>Date.now()?cd(c.until):""}</span></div>
+  ${c.plate?`<span class="plate n">${c.plate}</span>`:""}
+  <div class="mute n">Куплена за ${fmt(c.bought)} · вложено ${fmt(c.inv)}</div><div class="mute">Рыночная цена сейчас ≈ <b>${fmt(mktPrice(c))}</b></div>${defHtml(c)}
+  ${c.status==="idle"?`<div class="gap"><button class="g" data-rep="${c.id}:ext">В чужой сервис</button><button class="g" data-rep="${c.id}:own">В свою мастерскую</button></div>
+  <div class="gap">${c.plate?"":`<button class="g" data-reg="${c.id}">На учёт · ${fmt(REG)}</button>`}<button class="g" data-keep="${c.id}">${c.keep?"Убрать из личных":"Оставить себе"}</button></div>
+  ${c.keep?"<div class='mute' style='margin-top:6px'>Личная машина — не продаётся, пока вы её не выставите.</div>":`<div class="gap" style="align-items:center"><input type="number" step="1000" placeholder="Цена в объявлении" id="p${c.id}" value="${flash["p"+c.id]||mktPrice(c)}"><button data-sell="${c.id}" style="flex:0 0 auto">Выставить на продажу</button></div>
+  ${c.defects.some(d=>d.disc&&!d.rep)?`<label class="mute"><input type="checkbox" id="h${c.id}" style="width:auto"> Скрыть известные дефекты (риск репутации)</label>`:""}`}`:""}
+  ${c.status==="for_sale"&&c.listed?`<div class="sig" style="margin-top:4px">На продаже за ${fmt(c.listed.price)}${c.listed.disclose?"":" · дефекты скрыты"}</div><div class="mute">Активных диалогов: ${S.threads.filter(t=>t.car===c.id&&(t.st==="open"||t.st==="ready")).length}</div><div class="gap"><button class="g" data-tab="chat">Сообщения</button><button class="g" data-unlist="${c.id}">Снять с продажи</button></div>`:""}
+  ${flash[c.id]?`<div class="sig" style="margin-top:6px">${flash[c.id]}</div>`:""}</div>`).join("");
+}
+function vService(){
+  const[cm,tm]=mods(),dn=doneKeys();
+  return`<p style="font-size:14px">Своя мастерская: ремонт дешевле в ${(1/cm).toFixed(1)} раза, быстрее в ${(1/tm).toFixed(1)}. ${operational()?"Уже работает.":"Заработает после подъёмников."}</p><div class="bad" style="font-size:14px">${flash.svc||""}</div>`+
+  STAGES.map(s=>{const st=S.stages[s.k],status=st?.done?"done":st?"building":canStart(s,dn)?"avail":"lock";
+    return`<div class="card ${status==="done"?"done":""} ${status==="lock"?"lock":""}"><div class="row" style="align-items:center"><div><b>${s.n}</b><div class="n" style="font-size:14px;opacity:.8">${fmt(s.c)} · ${s.h} ч</div></div>
+    ${status==="avail"?`<button class="s" data-stage="${s.k}">Строить</button>`:status==="building"?cd(st.fin):status==="done"?"Готово":""}</div></div>`}).join("");
+}
+function vProfile(){
+  const avg=S.sold?S.margin/S.sold:0;
+  return`<h2 style="margin:0">Дилер</h2><div class="n" style="font-size:32px;font-weight:800">${fmt(S.bal)}</div>${S.bal<0?"<div class='bad'><b>Вы в минусе — покупки закрыты.</b></div>":""}
+  <div class="row" style="margin-top:12px"><span>Репутация</span><span class="n">${S.rep.toFixed(1)} / 100</span></div><div class="bar"><i style="width:${S.rep}%"></i></div>
+  <p class="n mute">Личных авто: ${S.cars.filter(c=>c.keep).length} · на учёте: ${S.cars.filter(c=>c.plate).length}<br>Куплено ${S.bought} · продано ${S.sold} · средняя маржа ${fmt(avg)}</p>
+  ${S.deals.slice(0,30).map(d=>`<div class="row mute" style="border-bottom:1px solid var(--line);padding:4px 0"><span>${d.kind==="buy"?"Покупка":"Продажа"}: ${d.title}${d.fraud?" (скрыт дефект)":""}</span><span class="n">${fmt(d.price)}</span></div>`).join("")}
+  <h3 style="margin:16px 0 4px">Свои картинки машин</h3><p class="mute" style="margin:0 0 8px">Выберите модель и загрузите фото — оно заменит рисунок. Хранится в вашем браузере.</p>
+  <div class="gap"><select id="imgModel">${Object.keys(MODELS).map(m=>`<option ${m===imgSel?"selected":""}>${m}</option>`).join("")}</select><button class="g" data-imgreset="1">Сбросить</button></div>
+  <div class="gap"><input type="file" id="imgFile" accept="image/*"></div>
+  <div class="gap"><button class="g" data-reset="1">Начать заново</button></div>`;
+}
+// ================= модалка торга =================
+function openHaggle(id){const c=S.market.find(x=>x.id===id);if(!c)return;S.sess[id]=S.sess[id]||{att:0,last:0,agr:0};H={id,log:[],dead:false,arg:0,err:""};drawHaggle()}
+function drawHaggle(){
+  const c=S.market.find(x=>x.id===H.id),s=S.sess[H.id],left=ATT-s.att,price=s.agr||c.ask,suggest=Math.round(price*.9/1e3)*1e3;
+  $("#sheet").innerHTML=`${carSvg(c)}<div class="row"><h2 style="margin:0">${c.brand} ${c.model}, ${c.year}</h2><span class="tag n">${fmt(price)}</span></div>
+  <div class="mute">${fmt(c.kmShown).replace(" ₽","")} км · владельцев ${c.owners} · ${c.color} · продавец ${c.bot.name}</div>${mktLine(c,price)}${defHtml(c)}
+  ${vis(c).filter(d=>DEF[d.key].r).length&&!H.dead?`<div class="gap">${vis(c).filter(d=>DEF[d.key].r).map(d=>`<button class="chip ${H.arg===d.id?"on":""}" style="flex:0 0 auto" data-arg="${d.id}">Довод: ${DEF[d.key].n}</button>`).join("")}</div>`:""}
+  <div class="log">${H.log.map(t=>`<div>${t}</div>`).join("")}</div><div class="bad" style="font-size:14px">${H.err}</div>
+  ${H.dead?"<b class='bad'>Сделка сорвана: продавец заблокировал вас на 30 минут.</b><div class='gap'><button class='g' data-close='1'>Закрыть</button></div>":
+  `<div class="gap" style="align-items:center"><input type="number" step="1000" id="offer" value="${H.offer||suggest}"><button data-offer="1" style="flex:0 0 auto" ${left<=0?"disabled":""}>Предложить (${left})</button></div>
+  <div class="gap"><button class="g" data-inspect="1">Осмотр ${fmt(INSPECT)}</button><button class="s" data-buy="1" style="flex:2">Купить за ${fmt(price)}</button></div><div class="gap"><button class="g" data-close="1">Закрыть</button></div>`}`;
+  $("#modal").classList.add("open");
+}
+const closeM=()=>{$("#modal").classList.remove("open");H=null;T=null;render()};
+function act(e){
+  const t=e.target.closest("button,[data-open],[data-thread]");if(!t)return;const d=t.dataset;
+  if(d.tab){tab=d.tab;flash={};render();return}
+  if(d.open){openHaggle(+d.open);return}
+  if(d.thread){T=+d.thread;terr="";S.threads.find(x=>x.id===T).unread=false;save();drawNav();drawThread();return}
+  if(T&&!d.close){threadAct(d);return}
+  if(d.close){closeM();return}
+  if(d.imgreset){delete S.imgs[imgSel];render();return}
+  if(d.reset){if(confirm("Удалить весь прогресс?")){localStorage.removeItem(KEY);location.reload()}return}
+  if(H){const c=S.market.find(x=>x.id===H.id),s=S.sess[H.id];H.err="";
+    if(d.arg){H.arg=H.arg===+d.arg?0:+d.arg;H.offer=+$("#offer").value}
+    if(d.inspect){if(S.bal<INSPECT)H.err="Не хватает денег на осмотр";else{S.bal-=INSPECT;const f=c.defects.filter(x=>!x.disc&&Math.random()<.6);f.forEach(x=>x.disc=true);H.log.push(`Осмотр (−${fmt(INSPECT)}): ${f.length?f.map(x=>DEF[x.key].n).join(", "):"ничего нового"}`);$("#bal").textContent=fmt(S.bal)}}
+    if(d.offer){const o=+$("#offer").value,bl=S.blocks[c.bot.name];
+      if(bl>Date.now())H.err="Продавец вас заблокировал";else if(s.att>=ATT)H.err="Попытки закончились";
+      else{const dd=c.defects.find(x=>x.id===H.arg&&x.disc),arg=dd?dd.cost:0;s.att++;
+        const r=haggle(o,c,floorP(c.ask,c.bot),s.att,arg,s.last);H.log.push(`Вы: ${fmt(o)}`,`${c.bot.name}: ${r.m}`);
+        if(r.k==="insult"){S.blocks[c.bot.name]=Date.now()+BLOCK;H.dead=true}else{s.agr=s.last=r.p;H.offer=r.p}}}
+    if(d.buy){const p=s.agr||c.ask;if(S.bal<0)H.err="Вы банкрот: сначала закройте долги";else if(S.bal<p)H.err="Не хватает денег";else{
+      S.bal-=p;S.bought++;S.market=S.market.filter(x=>x.id!==c.id);Object.assign(c,{status:"transit",until:Date.now()+2*TS,bought:p});S.cars.push(c);
+      S.deals.unshift({kind:"buy",title:`${c.brand} ${c.model} ${c.year}`,price:p,margin:0,fraud:false});closeM();return}}
+    save();drawHaggle();return}
+  if(d.keep){const c=S.cars.find(x=>x.id==d.keep);c.keep=!c.keep;flash={};render();return}
+  if(d.reg){const id=+d.reg,c=S.cars.find(x=>x.id===id),w=c.defects.find(x=>x.key==="welded_body"&&!x.rep);
+    if(w&&!w.disc&&Math.random()<.5){w.disc=true;flash[id]="ГИБДД: кузов признан перебитым — отказ. Нужен ремонт."}
+    else if(w&&w.disc)flash[id]="Отказ в регистрации: перебитый кузов. Сначала ремонт."
+    else if(S.bal<REG)flash[id]=`Нужно ${fmt(REG)}`
+    else{S.bal-=REG;c.inv+=REG;c.status="reg";c.until=Date.now()+REG_H*TS;c.pend=plate();flash[id]="Документы поданы, номера скоро будут готовы"}
+    render();return}
+  if(d.rep){const[id,prov]=d.rep.split(":"),c=S.cars.find(x=>x.id==id);let mult,tm;
+    if(prov==="own"){if(!operational()){flash[id]="Своя мастерская ещё не достроена";return render()}const[cm,t2]=mods();mult=Math.max(OWN_MIN,EXT*cm);tm=t2}
+    else{mult=EXT;tm=1;c.defects.forEach(x=>{if(!x.disc&&Math.random()<.5)x.disc=true})}
+    const todo=c.defects.filter(x=>x.disc&&!x.rep&&DEF[x.key].r),tot=todo.reduce((s,x)=>s+Math.floor(x.cost*mult),0);
+    if(!todo.length)flash[id]="Чинить нечего";else if(S.bal<tot)flash[id]=`Нужно ${fmt(tot)}`;
+    else{S.bal-=tot;c.inv+=tot;c.status="service";let mx=0;todo.forEach(x=>{const h=DEF[x.key].hr*tm;mx=Math.max(mx,h);x.fix=Date.now()+h*TS});c.until=Date.now()+mx*TS;flash[id]=`Заказано: ${fmt(tot)}`}
+    render();return}
+  if(d.sell){const id=+d.sell,c=S.cars.find(x=>x.id===id),price=+$("#p"+id).value;flash["p"+id]=price||"";
+    if(!price||price<1e3)flash[id]="Укажите цену";
+    else{c.status="for_sale";c.listed={price,disclose:!($("#h"+id)?.checked),next:Date.now()+R(4e3,9e3)};flash[id]="Объявление опубликовано — ждите сообщений"}
+    render();return}
+  if(d.unlist){const c=S.cars.find(x=>x.id==d.unlist);c.status="idle";delete c.listed;closeThreads(c.id,"Объявление снято с продажи.");render();return}
+  if(d.stage){const st=STAGES.find(x=>x.k===d.stage);flash.svc="";
+    if(Object.values(S.stages).some(x=>!x.done))flash.svc="Стройка уже идёт";else if(S.bal<st.c)flash.svc="Не хватает денег на этап";
+    else{S.bal-=st.c;S.stages[st.k]={fin:Date.now()+st.h*TS,done:false}}render()}
+}
+document.addEventListener("click",act);
+document.addEventListener("change",e=>{const t=e.target;
+  if(t.dataset.f){flt[t.dataset.f]=t.value;render()}
+  if(t.id==="imgModel")imgSel=t.value;
+  if(t.id==="imgFile"&&t.files[0]){const im=new Image(),u=URL.createObjectURL(t.files[0]);
+    im.onload=()=>{const k=Math.min(1,640/im.width),cv=document.createElement("canvas");cv.width=im.width*k;cv.height=im.height*k;cv.getContext("2d").drawImage(im,0,0,cv.width,cv.height);
+      S.imgs[imgSel]=cv.toDataURL("image/jpeg",.8);URL.revokeObjectURL(u);render()};im.src=u}});
+setInterval(()=>{settle();const ch=tickSales();if(H||T){if(ch)drawNav();return}
+  if(tab==="market"&&Date.now()-S.tick>MARKET_MS){render();return}
+  if(ch&&tab!=="market"){render();return}
+  document.querySelectorAll("[data-until]").forEach(el=>{const s=Math.max(0,Math.round((+el.dataset.until-Date.now())/1e3));el.textContent=Math.floor(s/60)+":"+String(s%60).padStart(2,"0");if(!s)render()});if(ch)drawNav()},1000);
+try{Telegram.WebApp.ready();Telegram.WebApp.expand()}catch(e){}
+render();
+</script></body></html>
