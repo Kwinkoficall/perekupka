@@ -7,7 +7,7 @@
 <style>
 :root{--bg:#ecebe5;--ink:#1d2327;--tag:#ffd23f;--sig:#2150d6;--bad:#c8372d;--mute:#6b7176;--line:#d3d1c9;--card:#fff;--good:#1f8a4c}
 @media(prefers-color-scheme:dark){:root{--bg:#171a1d;--ink:#ecebe5;--line:#32383d;--card:#21262a;--mute:#9aa0a5;--good:#4cc383}}
-*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.4 Archivo,system-ui,sans-serif;padding-top:env(safe-area-inset-top);padding-bottom:calc(64px + env(safe-area-inset-bottom))}
+*{box-sizing:border-box}html,body{max-width:100%;overflow-x:hidden}.row>*,.gap>*,.card{min-width:0}.row{flex-wrap:wrap}#vipb:empty{display:none}#vipb{margin-left:6px}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.4 Archivo,system-ui,sans-serif;padding-top:env(safe-area-inset-top);padding-bottom:calc(64px + env(safe-area-inset-bottom))}
 main{max-width:600px;margin:auto;padding:12px 16px}header{position:sticky;top:0;background:var(--bg);display:flex;justify-content:space-between;align-items:baseline;padding:12px 16px;border-bottom:1px solid var(--line);z-index:5;max-width:600px;margin:auto}
 .n{font-variant-numeric:tabular-nums;font-stretch:75%}.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px;margin-bottom:10px}
 .row{display:flex;justify-content:space-between;gap:8px;align-items:flex-start}.mute{color:var(--mute);font-size:14px}.bad{color:var(--bad)}.sig{color:var(--sig);font-weight:600}
@@ -16,14 +16,14 @@ button,select,input{font:inherit;color:var(--ink)}button{border:0;border-radius:
 button.s{background:var(--sig);color:#fff}button.g{background:none;border:1px solid var(--ink);color:var(--ink)}button:disabled{opacity:.4}button:active{transform:translateY(1px)}
 input,select{border:1px solid var(--line);border-radius:8px;padding:8px 10px;background:var(--card)}input[type=number]{width:100%}
 :focus-visible{outline:2px solid var(--sig);outline-offset:2px}.gap{display:flex;gap:8px;margin-top:8px;flex-wrap:wrap}.gap>*{flex:1}
-nav{position:fixed;bottom:0;left:0;right:0;background:#1d2327;display:grid;grid-template-columns:repeat(6,1fr);padding-bottom:env(safe-area-inset-bottom)}
-nav button{background:none;color:#ecebe5;border-radius:0;padding:16px 0;font-size:12px;position:relative}.badge{position:absolute;top:8px;right:calc(50% - 26px);background:var(--bad);color:#fff;font-size:11px;min-width:17px;height:17px;border-radius:9px;line-height:17px;text-align:center}nav button.on{background:var(--sig)}
+nav{position:fixed;bottom:0;left:0;right:0;background:#1d2327;display:grid;grid-template-columns:repeat(6,minmax(0,1fr));padding-bottom:env(safe-area-inset-bottom)}
+nav button{background:none;color:#ecebe5;border-radius:0;padding:16px 0;font-size:11.5px;position:relative;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.badge{position:absolute;top:8px;right:calc(50% - 26px);background:var(--bad);color:#fff;font-size:11px;min-width:17px;height:17px;border-radius:9px;line-height:17px;text-align:center}nav button.on{background:var(--sig)}
 #modal{position:fixed;inset:0;background:#0009;display:none;align-items:flex-end;z-index:9}#modal.open{display:flex}
 #sheet{background:var(--bg);width:100%;max-width:600px;margin:auto;max-height:90vh;overflow:auto;border-radius:14px 14px 0 0;padding:16px}
 .log{border-left:2px solid var(--line);padding-left:10px;font-size:14px;min-height:20px;margin:8px 0}.bar{height:8px;background:var(--line);border-radius:4px}.bar i{display:block;height:8px;background:var(--sig);border-radius:4px}
 .plate{display:inline-block;border:2px solid var(--ink);border-radius:5px;padding:1px 10px;margin:4px 0;background:#fff;color:#1d2327;font-weight:700;letter-spacing:1px;font-size:17px}
 .pic{background:linear-gradient(var(--line),var(--card));border-radius:8px;margin-bottom:8px;padding:6px 4px 0;overflow:hidden}.pic img{display:block;margin:auto;width:100%;max-height:170px;object-fit:cover;border-radius:6px}.pic svg{display:block;margin:auto;width:100%;max-height:150px}
-.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:12px 0}.stat{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px}.stat b{display:block;font-size:30px;margin:6px 0 2px}
+.stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:12px 0}.stat{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:10px;min-width:0;overflow-wrap:anywhere}.stat>span:first-child{font-size:13px}.stat b{display:block;font-size:26px;margin:4px 0 2px}.stat>span:last-child{font-size:12px;line-height:1.25;display:block}
 .empty{text-align:center;padding:36px 16px}.empty h3{font-size:22px;margin:14px 0 6px}.bub{max-width:80%;padding:8px 12px;border-radius:14px;margin:4px 0;background:var(--card);border:1px solid var(--line)}.bub.me{background:var(--sig);color:#fff;border:0}
 .chip2{font-size:12px;padding:2px 8px;border-radius:6px;background:var(--line)}.dot{display:inline-block;width:9px;height:9px;border-radius:50%;background:var(--bad);margin-right:6px}
 .toast{position:fixed;top:12px;left:50%;transform:translateX(-50%);background:var(--sig);color:#fff;padding:10px 16px;border-radius:10px;z-index:120;max-width:90%;font-weight:600;box-shadow:0 4px 16px #0006}
@@ -164,9 +164,9 @@ function vChat(){
   const ST={open:"Торгуется",ready:"Готов к сделке",closed:"Закрыт",done:"Продано"},ord={ready:0,open:1,done:2,closed:3};
   const list=[...S.threads].sort((a,b)=>ord[a.st]-ord[b.st]||b.t-a.t);
   return`<h2 style="margin:4px 0;font-size:30px">Сообщения</h2><p class="mute" style="margin:0">Предложения покупателей и ваши договорённости.</p>
-  <div class="stats"><div class="stat"><span class="mute">Диалоги</span><b class="n">${o}</b><span class="mute" style="font-size:13px">Активные предложения</span></div>
-  <div class="stat"><span class="mute">Договорились</span><b class="n">${r}</b><span class="mute" style="font-size:13px">Покупатели готовы к сделке</span></div>
-  <div class="stat"><span class="mute">В продаже</span><b class="n">${n}</b><span class="mute" style="font-size:13px">Машины ждут покупателей</span></div></div>`+
+  <div class="stats"><div class="stat"><span class="mute">Диалоги</span><b class="n">${o}</b><span class="mute">Активные предложения</span></div>
+  <div class="stat"><span class="mute">Договорились</span><b class="n">${r}</b><span class="mute">Покупатели готовы к сделке</span></div>
+  <div class="stat"><span class="mute">В продаже</span><b class="n">${n}</b><span class="mute">Машины ждут покупателей</span></div></div>`+
   (list.length?list.map(t=>`<div class="card" data-thread="${t.id}" style="cursor:pointer;${t.st==="closed"?"opacity:.6":""}"><div class="row"><b>${t.unread?'<i class="dot"></i>':""}${t.buyer}</b><span class="chip2">${ST[t.st]}</span></div>
    <div class="mute">${t.title}</div><div class="row" style="margin-top:4px"><span style="font-size:14px">${[...t.msgs].reverse().find(m=>m.f==="b")?.t||""}</span>${t.st==="ready"?`<span class="tag n">${fmt(t.price)}</span>`:t.st==="open"?`<span class="tag n">${fmt(t.offer)}</span>`:""}</div></div>`).join(""):
   `<div class="card empty"><svg width="76" height="54" viewBox="0 0 76 54" fill="none" stroke="var(--sig)" stroke-width="2"><rect x="2" y="2" width="72" height="50"/><path d="M2 2 L38 30 L74 2 M2 52 L28 24 M74 52 L48 24"/><circle cx="38" cy="27" r="6" fill="var(--sig)"/></svg>
