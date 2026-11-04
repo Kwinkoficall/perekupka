@@ -16,8 +16,8 @@ button,select,input{font:inherit;color:var(--ink)}button{border:0;border-radius:
 button.s{background:var(--sig);color:#fff}button.g{background:none;border:1px solid var(--ink);color:var(--ink)}button:disabled{opacity:.4}button:active{transform:translateY(1px)}
 input,select{border:1px solid var(--line);border-radius:8px;padding:8px 10px;background:var(--card)}input[type=number]{width:100%}
 :focus-visible{outline:2px solid var(--sig);outline-offset:2px}.gap{display:flex;gap:8px;margin-top:8px;flex-wrap:wrap}.gap>*{flex:1}
-nav{position:fixed;bottom:0;left:0;right:0;background:#1d2327;display:grid;grid-template-columns:repeat(5,1fr);padding-bottom:env(safe-area-inset-bottom)}
-nav button{background:none;color:#ecebe5;border-radius:0;padding:16px 0;font-size:14px;position:relative}.badge{position:absolute;top:8px;right:calc(50% - 26px);background:var(--bad);color:#fff;font-size:11px;min-width:17px;height:17px;border-radius:9px;line-height:17px;text-align:center}nav button.on{background:var(--sig)}
+nav{position:fixed;bottom:0;left:0;right:0;background:#1d2327;display:grid;grid-template-columns:repeat(6,1fr);padding-bottom:env(safe-area-inset-bottom)}
+nav button{background:none;color:#ecebe5;border-radius:0;padding:16px 0;font-size:12px;position:relative}.badge{position:absolute;top:8px;right:calc(50% - 26px);background:var(--bad);color:#fff;font-size:11px;min-width:17px;height:17px;border-radius:9px;line-height:17px;text-align:center}nav button.on{background:var(--sig)}
 #modal{position:fixed;inset:0;background:#0009;display:none;align-items:flex-end;z-index:9}#modal.open{display:flex}
 #sheet{background:var(--bg);width:100%;max-width:600px;margin:auto;max-height:90vh;overflow:auto;border-radius:14px 14px 0 0;padding:16px}
 .log{border-left:2px solid var(--line);padding-left:10px;font-size:14px;min-height:20px;margin:8px 0}.bar{height:8px;background:var(--line);border-radius:4px}.bar i{display:block;height:8px;background:var(--sig);border-radius:4px}
@@ -26,17 +26,22 @@ nav button{background:none;color:#ecebe5;border-radius:0;padding:16px 0;font-siz
 .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:12px 0}.stat{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px}.stat b{display:block;font-size:30px;margin:6px 0 2px}
 .empty{text-align:center;padding:36px 16px}.empty h3{font-size:22px;margin:14px 0 6px}.bub{max-width:80%;padding:8px 12px;border-radius:14px;margin:4px 0;background:var(--card);border:1px solid var(--line)}.bub.me{background:var(--sig);color:#fff;border:0}
 .chip2{font-size:12px;padding:2px 8px;border-radius:6px;background:var(--line)}.dot{display:inline-block;width:9px;height:9px;border-radius:50%;background:var(--bad);margin-right:6px}
+.toast{position:fixed;top:12px;left:50%;transform:translateX(-50%);background:var(--sig);color:#fff;padding:10px 16px;border-radius:10px;z-index:120;max-width:90%;font-weight:600;box-shadow:0 4px 16px #0006}
 #lock{position:fixed;inset:0;background:var(--bg);z-index:99;display:none;align-items:center;justify-content:center;padding:16px}
 .done{background:var(--ink);color:var(--bg)}.lock{opacity:.5}.chip{font-size:12px;padding:4px 8px;border-radius:6px;border:1px solid var(--line);background:none;color:var(--ink)}.chip.on{background:var(--ink);color:var(--bg)}
 </style></head><body>
-<header><b style="font-size:19px">Перекуп</b><span class="n" id="bal" style="font-weight:700"></span></header>
+<header><b style="font-size:19px">Перекуп <span id="vipb" class="tag" style="font-size:12px"></span></b><span class="n" id="bal" style="font-weight:700"></span></header>
 <main id="app"></main>
 <nav id="nav"></nav><div id="lock"></div><div id="modal"><div id="sheet"></div></div>
 <script>
 "use strict";
 // Адрес вашего Cloudflare Worker, например "https://perekup-bot.ваш-аккаунт.workers.dev". Пусто = игра без проверки подписки.
 const API="https://empty-waterfall-f93fperekup-bot.kwink483.workers.dev";
-let cloud=false,pushT=0,chUrl="";
+let cloud=false,pushT=0,chUrl="",isAdmin=false,vipUntil=0,capBought=false,adm={t:"",a:"",n:"",msg:"",users:[]};
+const vip=()=>vipUntil>Date.now();
+// Бонусы VIP — меняйте числа здесь
+const VIP={repairCost:.85,repairTime:.75,buyerRate:.6};
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 // ================= данные =================
 const MODELS={"Toyota Camry":2800000,"Toyota Corolla":2000000,"Toyota RAV4":4200000,"Toyota Land Cruiser Prado":7500000,"Hyundai Solaris":1500000,"Hyundai Elantra":1800000,"Hyundai Sonata":2400000,"Hyundai Creta":2200000,"Hyundai Tucson":3200000,"Kia Rio":1600000,"Kia Ceed":2200000,"Kia Optima":2200000,"Kia Sportage":3200000,"Lada 2114":500000,"Lada Priora":900000,"Lada Granta":1000000,"Lada Vesta":1300000,"Lada Largus":1300000,"Lada Niva Travel":1200000,"Volkswagen Polo":1700000,"Volkswagen Passat":3000000,"Volkswagen Tiguan":3400000,"Skoda Rapid":1500000,"Skoda Octavia":2200000,"Nissan Almera":1200000,"Nissan Qashqai":2800000,"Nissan X-Trail":3200000,"Mazda 3":2200000,"Mazda CX-5":3400000,"Honda Civic":2400000,"Honda CR-V":3600000,"Ford Focus":1800000,"Chevrolet Cruze":1600000,"Renault Logan":1100000,"Renault Duster":1900000,"Mitsubishi Lancer":1800000,"Mitsubishi Outlander":3000000,"Subaru Forester":3200000,"UAZ Patriot":1600000,"Audi A6":5200000,"BMW 320i":3800000,"BMW 528i":4400000,"BMW X5":7500000,"Mercedes C200":4000000,"Mercedes E200":4800000,"Lexus RX350":5600000,"Lexus LX570":9000000};
 const RARE=["BMW","Mercedes","Lexus","Audi"],COLORS=["белый","чёрный","серебристый","серый","синий","красный"],BOTS=["Ерлан","Данияр","Асель","Марат","Айгерим","Серик","Владимир","Жанна","Тимур","Руслан"];
@@ -118,7 +123,7 @@ function carSvg(c){
 function closeThreads(car,why){S.threads.forEach(t=>{if(t.car===car&&(t.st==="open"||t.st==="ready")){t.st="closed";t.msgs.push({f:"s",t:why})}})}
 function tickSales(){const now=Date.now();let ch=false;
   S.cars.forEach(c=>{if(c.status!=="for_sale"||!c.listed||c.listed.next>now)return;
-    c.listed.next=now+R(15e3,35e3);if(S.threads.filter(t=>t.car===c.id&&(t.st==="open"||t.st==="ready")).length>=3)return;
+    c.listed.next=now+R(15e3,35e3)*(vip()?VIP.buyerRate:1);if(S.threads.filter(t=>t.car===c.id&&(t.st==="open"||t.st==="ready")).length>=3)return;
     const known=c.defects.filter(d=>!d.rep&&d.disc),per=valueWith(c.clean,c.listed.disclose?known:[])*(c.plate?1.04:1),ratio=c.listed.price/per;
     if(Math.random()>(ratio<=.9?.95:ratio<=1?.7:ratio<=1.15?.4:.15))return;
     const g=Math.random(),bmax=Math.floor(per*(.88+S.rep*.002)*(1.05-.1*g)*R(.96,1.04)/1e3)*1e3,pr=c.listed.price;
@@ -170,7 +175,8 @@ function vChat(){
 // Оценка по тому, что видит игрок: заявленный пробег и найденные дефекты. Скрытое в неё не входит.
 function mktPrice(c){const odo=c.defects.some(d=>d.key==="odometer"&&d.disc),base=clean(c.brand+" "+c.model,c.year,odo?c.kmReal:c.kmShown);
   const v=valueWith(base,c.defects.filter(d=>d.disc&&!d.rep))*(S.demand[c.brand]||1)*(c.plate?1.04:1);return Math.round(v/1e3)*1e3}
-function mktLine(c,price){const m=mktPrice(c),p=Math.round((price-m)/m*100);
+function mktLine(c,price){if(!vip())return`<div class="mute" style="font-size:13px">🔒 Рыночная цена — только для VIP (вкладка «Магазин»)</div>`;
+  const m=mktPrice(c),p=Math.round((price-m)/m*100);
   const t=Math.abs(p)<=2?"<span>по рынку</span>":p<0?`<span style="color:var(--good);font-weight:600">дешевле рынка на ${-p}%</span>`:`<span class="bad" style="font-weight:600">дороже рынка на ${p}%</span>`;
   return`<div class="mute" style="font-size:13px">Рыночная ≈ ${fmt(m)} · ${t}</div>`}
 // ================= подписка на канал + облачное сохранение =================
@@ -185,29 +191,68 @@ const lockSub=()=>lock(`<h2 style="margin:0 0 8px">Нужна подписка</
 const lockErr=m=>lock(`<h2 style="margin:0 0 8px">Не получилось</h2><p class="mute">${m}</p><div class="gap"><button class="g" data-recheck="1">Повторить</button></div>`);
 function cloudSoon(){if(!cloud)return;clearTimeout(pushT);pushT=setTimeout(pushNow,3000)}
 function pushNow(){const{imgs,...st}=S;apiCall("/api/save","PUT",{state:st}).catch(e=>{if(e.status===403){cloud=false;lockSub()}})}
-async function recheck(){try{const r=await apiCall("/api/auth","POST");if(!r.subscribed){cloud=false;chUrl=r.channelUrl||chUrl;lockSub()}}catch(e){}}
+function toast(t){const d=document.createElement("div");d.className="toast";d.textContent=t;document.body.appendChild(d);setTimeout(()=>d.remove(),5000)}
+async function claimGrants(){if(!cloud)return;
+  try{const r=await apiCall("/api/claim","POST");
+    if(r.grants&&r.grants.length){const sum=r.grants.reduce((a,g)=>a+g.amount,0);S.bal+=sum;save();clearTimeout(pushT);pushNow();
+      const note=r.grants.map(g=>g.note).filter(Boolean).join("; ");toast(`${sum>0?"Вам выдали":"Списано"} ${fmt(Math.abs(sum))}${note?" · "+note:""}`);
+      $("#bal").textContent=fmt(S.bal);if(!H&&!T)render()}
+  }catch(e){if(e.status===403){cloud=false;lockSub()}}}
+async function loadUsers(){try{adm.users=(await apiCall("/api/admin/users","GET")).users}catch(e){adm.msg=e.message}if(tab==="profile"&&!H&&!T)render()}
+async function adminGrant(){const amount=Math.round(+adm.a);
+  if(!adm.t.trim()||!amount){adm.msg="Укажите получателя и сумму";return render()}
+  try{const r=await apiCall("/api/admin/grant","POST",{target:adm.t.trim(),amount,note:adm.n});
+    adm.msg=`${amount>0?"Выдано":"Списано"} ${fmt(Math.abs(amount))} игроку ${r.target.name} (${r.target.tg_id}). Он получит деньги, когда зайдёт в игру.`;adm.a="";
+    if(r.self)claimGrants()}catch(e){adm.msg=e.message}
+  render()}
+async function recheck(){try{const r=await apiCall("/api/auth","POST");if(!r.subscribed){cloud=false;chUrl=r.channelUrl||chUrl;lockSub()}else{vipUntil=r.vip_until||0;capBought=!!r.capital}}catch(e){}}
 async function boot(){
   if(!API){render();return}
   if(!tg?.initData){lockErr("Откройте игру через нашего бота в Telegram.");return}
   lock('<p class="mute">Проверяем подписку…</p>');
   try{const r=await apiCall("/api/auth","POST");chUrl=r.channelUrl||"";
     if(!r.subscribed){cloud=false;lockSub();return}
+    isAdmin=!!r.admin;vipUntil=r.vip_until||0;capBought=!!r.capital;
     if(r.save&&r.save.state){const keep=S.imgs;S=Object.assign({threads:[],imgs:{}},r.save.state);S.imgs=keep||{}}
-    cloud=true;unlock();render();cloudSoon();
+    cloud=true;unlock();render();cloudSoon();claimGrants();
+    if(!window._cg)window._cg=setInterval(()=>{if(!document.hidden)claimGrants()},60e3);
     if(!window._rc)window._rc=setInterval(recheck,300e3)
   }catch(e){lockErr(e.status===502?"Бот ещё не настроен: он должен быть администратором канала.":"Нет связи с сервером. Проверьте интернет.")}}
+// ================= магазин (Telegram Stars) =================
+let shopBusy=false;
+async function buyShop(k){
+  if(!API||!tg?.openInvoice){toast("Покупки доступны только внутри Telegram");return}
+  if(shopBusy)return;shopBusy=true;
+  try{const r=await apiCall("/api/shop/invoice","POST",{product:k});
+    tg.openInvoice(r.link,async st=>{shopBusy=false;
+      if(st==="paid"){toast("Оплата прошла, оформляем…");await pollShop()}else if(st==="failed")toast("Оплата не прошла")})
+  }catch(e){shopBusy=false;toast(e.message||"Ошибка")}}
+async function pollShop(){const b=vipUntil+(capBought?1:0);
+  for(let i=0;i<10;i++){await new Promise(r=>setTimeout(r,1500));
+    try{const r=await apiCall("/api/shop/status","GET");vipUntil=r.vip_until;capBought=r.capital;
+      if(vipUntil+(capBought?1:0)!==b){await claimGrants();toast("Покупка активирована!");if(!H&&!T)render();return}}catch(e){}}
+  toast("Платёж обрабатывается. Если ничего не изменилось, перезайдите в игру через минуту.")}
+function vShop(){
+  const on=vip(),d=new Date(vipUntil).toLocaleString("ru-RU",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"}),left=Math.ceil((vipUntil-Date.now())/864e5);
+  return`<h2 style="margin:4px 0;font-size:30px">Магазин</h2><p class="mute" style="margin:0 0 10px">Оплата в Telegram Stars (⭐).</p>
+  <div class="card"><div class="row"><b style="font-size:18px">VIP</b><span class="chip2">${on?`до ${d} · ещё ${left} дн.`:"не активен"}</span></div>
+  <ul class="mute" style="margin:8px 0;padding-left:18px;font-size:14px"><li>Ремонт дешевле на ${Math.round((1-VIP.repairCost)*100)}% и быстрее на ${Math.round((1-VIP.repairTime)*100)}%</li><li>Покупатели пишут в ${(1/VIP.buyerRate).toFixed(1).replace(".",",")} раза чаще</li><li>Рыночные цены на все машины</li><li>Осмотр перед покупкой бесплатный</li><li>Значок VIP</li></ul>
+  <div class="gap"><button class="s" data-shop="vip7">7 дней · 50 ⭐</button><button class="s" data-shop="vip14">14 дней · 100 ⭐</button><button class="s" data-shop="vip30">30 дней · 150 ⭐</button></div>
+  <p class="mute" style="font-size:12px;margin:8px 0 0">Повторная покупка продлевает VIP.</p></div>
+  <div class="card"><div class="row"><b style="font-size:18px">Стартовый капитал</b>${capBought?'<span class="chip2">получен</span>':""}</div>
+  <p class="mute" style="margin:6px 0">+${fmt(2e6)} на баланс. Покупка разовая.</p><div class="gap"><button class="s" data-shop="capital" ${capBought?"disabled":""}>25 ⭐</button></div></div>`}
 // ================= UI =================
 const $=s=>document.querySelector(s);let tab="market",flt={brand:"",sort:"new"},H=null,T=null,flash={};
-const TABS=[["market","Маркет"],["garage","Гараж"],["chat","Чаты"],["service","Сервис"],["profile","Профиль"]];
+const TABS=[["market","Маркет"],["garage","Гараж"],["chat","Чаты"],["service","Сервис"],["shop","Магазин"],["profile","Профиль"]];
 const vis=c=>c.defects.filter(d=>d.disc);
 const defHtml=c=>{const v=vis(c);return v.length?"<div style='font-size:14px'>"+v.map(d=>`<div class="${d.rep?"mute":"bad"}" ${d.rep?"style='text-decoration:line-through'":""}>${DEF[d.key].n}${DEF[d.key].r?` · ремонт ~${fmt(d.cost)}`:""}</div>`).join("")+"</div>":"<div class='mute'>Явных дефектов нет</div>"};
 const cd=u=>{const s=Math.max(0,Math.round((u-Date.now())/1e3));return`<span class="n" data-until="${u}">${Math.floor(s/60)}:${String(s%60).padStart(2,"0")}</span>`};
 function drawNav(){const u=S.threads.filter(t=>t.unread).length;
   $("#nav").innerHTML=TABS.map(([k,l])=>`<button class="${tab===k?"on":""}" data-tab="${k}">${l}${k==="chat"&&u?`<span class="badge">${u}</span>`:""}</button>`).join("")}
 function render(){
-  settle();ensureMarket();$("#bal").textContent=fmt(S.bal);
+  settle();ensureMarket();$("#bal").textContent=fmt(S.bal);$("#vipb").textContent=vip()?"VIP":"";
   drawNav();
-  $("#app").innerHTML=({market:vMarket,garage:vGarage,chat:vChat,service:vService,profile:vProfile})[tab]();save();
+  $("#app").innerHTML=({market:vMarket,garage:vGarage,chat:vChat,service:vService,shop:vShop,profile:vProfile})[tab]();save();
 }
 function vMarket(){
   let l=S.market.filter(c=>!flt.brand||c.brand===flt.brand);
@@ -224,10 +269,10 @@ function vGarage(){
   if(!S.cars.length)return"<p class='mute'>Гараж пуст. Купите машину на маркетплейсе.</p>";
   return S.cars.map(c=>`<div class="card">${carSvg(c)}<div class="row"><b>${c.brand} ${c.model}, ${c.year}${c.keep?" · моя":""}</b><span style="font-size:14px">${L[c.status]} ${c.until>Date.now()?cd(c.until):""}</span></div>
   ${c.plate?`<span class="plate n">${c.plate}</span>`:""}
-  <div class="mute n">Куплена за ${fmt(c.bought)} · вложено ${fmt(c.inv)}</div><div class="mute">Рыночная цена сейчас ≈ <b>${fmt(mktPrice(c))}</b></div>${defHtml(c)}
+  <div class="mute n">Куплена за ${fmt(c.bought)} · вложено ${fmt(c.inv)}</div><div class="mute">${vip()?`Рыночная цена сейчас ≈ <b>${fmt(mktPrice(c))}</b>`:"🔒 Рыночная цена — только для VIP"}</div>${defHtml(c)}
   ${c.status==="idle"?`<div class="gap"><button class="g" data-rep="${c.id}:ext">В чужой сервис</button><button class="g" data-rep="${c.id}:own">В свою мастерскую</button></div>
   <div class="gap">${c.plate?"":`<button class="g" data-reg="${c.id}">На учёт · ${fmt(REG)}</button>`}<button class="g" data-keep="${c.id}">${c.keep?"Убрать из личных":"Оставить себе"}</button></div>
-  ${c.keep?"<div class='mute' style='margin-top:6px'>Личная машина — не продаётся, пока вы её не выставите.</div>":`<div class="gap" style="align-items:center"><input type="number" step="1000" placeholder="Цена в объявлении" id="p${c.id}" value="${flash["p"+c.id]||mktPrice(c)}"><button data-sell="${c.id}" style="flex:0 0 auto">Выставить на продажу</button></div>
+  ${c.keep?"<div class='mute' style='margin-top:6px'>Личная машина — не продаётся, пока вы её не выставите.</div>":`<div class="gap" style="align-items:center"><input type="number" step="1000" placeholder="Цена в объявлении" id="p${c.id}" value="${flash["p"+c.id]||(vip()?mktPrice(c):"")}"><button data-sell="${c.id}" style="flex:0 0 auto">Выставить на продажу</button></div>
   ${c.defects.some(d=>d.disc&&!d.rep)?`<label class="mute"><input type="checkbox" id="h${c.id}" style="width:auto"> Скрыть известные дефекты (риск репутации)</label>`:""}`}`:""}
   ${c.status==="for_sale"&&c.listed?`<div class="sig" style="margin-top:4px">На продаже за ${fmt(c.listed.price)}${c.listed.disclose?"":" · дефекты скрыты"}</div><div class="mute">Активных диалогов: ${S.threads.filter(t=>t.car===c.id&&(t.st==="open"||t.st==="ready")).length}</div><div class="gap"><button class="g" data-tab="chat">Сообщения</button><button class="g" data-unlist="${c.id}">Снять с продажи</button></div>`:""}
   ${flash[c.id]?`<div class="sig" style="margin-top:6px">${flash[c.id]}</div>`:""}</div>`).join("");
@@ -248,6 +293,14 @@ function vProfile(){
   <h3 style="margin:16px 0 4px">Свои картинки машин</h3><p class="mute" style="margin:0 0 8px">Выберите модель и загрузите фото — оно заменит рисунок. Хранится в вашем браузере.</p>
   <div class="gap"><select id="imgModel">${Object.keys(MODELS).map(m=>`<option ${m===imgSel?"selected":""}>${m}</option>`).join("")}</select><button class="g" data-imgreset="1">Сбросить</button></div>
   <div class="gap"><input type="file" id="imgFile" accept="image/*"></div>
+  ${isAdmin?`<h3 style="margin:16px 0 4px">Админ-панель</h3>
+  <div class="gap" style="align-items:center"><input data-adm="t" placeholder="ID или @username" value="${esc(adm.t)}"><button class="g" data-admself="1" style="flex:0 0 auto">Себе</button></div>
+  <div class="gap"><input type="number" data-adm="a" placeholder="Сумма, ₽ (минус — забрать)" value="${esc(adm.a)}"></div>
+  <div class="gap"><input data-adm="n" placeholder="Комментарий (необязательно)" value="${esc(adm.n)}"></div>
+  <div class="gap"><button class="s" data-admgrant="1">Выдать</button></div>
+  <div class="sig" style="font-size:14px;margin-top:6px">${esc(adm.msg)}</div>
+  <div class="row" style="margin-top:10px"><b>Игроки</b><button class="chip" data-admload="1">Обновить</button></div>
+  ${adm.users.map(u=>`<div class="row mute" data-admpick="${u.tg_id}" style="border-bottom:1px solid var(--line);padding:6px 0;cursor:pointer"><span>${esc(u.first_name)} ${u.username?"@"+esc(u.username):""}</span><span class="n">${u.tg_id}</span></div>`).join("")}`:""}
   <div class="gap"><button class="g" data-reset="1">Начать заново</button></div>`;
 }
 // ================= модалка торга =================
@@ -260,15 +313,20 @@ function drawHaggle(){
   <div class="log">${H.log.map(t=>`<div>${t}</div>`).join("")}</div><div class="bad" style="font-size:14px">${H.err}</div>
   ${H.dead?"<b class='bad'>Сделка сорвана: продавец заблокировал вас на 30 минут.</b><div class='gap'><button class='g' data-close='1'>Закрыть</button></div>":
   `<div class="gap" style="align-items:center"><input type="number" step="1000" id="offer" value="${H.offer||suggest}"><button data-offer="1" style="flex:0 0 auto" ${left<=0?"disabled":""}>Предложить (${left})</button></div>
-  <div class="gap"><button class="g" data-inspect="1">Осмотр ${fmt(INSPECT)}</button><button class="s" data-buy="1" style="flex:2">Купить за ${fmt(price)}</button></div><div class="gap"><button class="g" data-close="1">Закрыть</button></div>`}`;
+  <div class="gap"><button class="g" data-inspect="1">Осмотр ${vip()?"бесплатно (VIP)":fmt(INSPECT)}</button><button class="s" data-buy="1" style="flex:2">Купить за ${fmt(price)}</button></div><div class="gap"><button class="g" data-close="1">Закрыть</button></div>`}`;
   $("#modal").classList.add("open");
 }
 const closeM=()=>{$("#modal").classList.remove("open");H=null;T=null;render()};
 function act(e){
-  const t=e.target.closest("button,[data-open],[data-thread]");if(!t)return;const d=t.dataset;
+  const t=e.target.closest("button,[data-open],[data-thread],[data-admpick]");if(!t)return;const d=t.dataset;
   if(d.sub){chUrl&&(tg?.openTelegramLink?tg.openTelegramLink(chUrl):window.open(chUrl,"_blank"));return}
   if(d.recheck){boot();return}
-  if(d.tab){tab=d.tab;flash={};render();return}
+  if(d.shop){buyShop(d.shop);return}
+  if(d.admself){adm.t=String(tg?.initDataUnsafe?.user?.id||"");render();return}
+  if(d.admpick){adm.t=d.admpick;render();return}
+  if(d.admload){loadUsers();return}
+  if(d.admgrant){adminGrant();return}
+  if(d.tab){tab=d.tab;flash={};render();if(tab==="profile"&&isAdmin&&!adm.users.length)loadUsers();return}
   if(d.open){openHaggle(+d.open);return}
   if(d.thread){T=+d.thread;terr="";S.threads.find(x=>x.id===T).unread=false;save();drawNav();drawThread();return}
   if(T&&!d.close){threadAct(d);return}
@@ -277,7 +335,7 @@ function act(e){
   if(d.reset){if(confirm("Удалить весь прогресс?")){localStorage.removeItem(KEY);location.reload()}return}
   if(H){const c=S.market.find(x=>x.id===H.id),s=S.sess[H.id];H.err="";
     if(d.arg){H.arg=H.arg===+d.arg?0:+d.arg;H.offer=+$("#offer").value}
-    if(d.inspect){if(S.bal<INSPECT)H.err="Не хватает денег на осмотр";else{S.bal-=INSPECT;const f=c.defects.filter(x=>!x.disc&&Math.random()<.6);f.forEach(x=>x.disc=true);H.log.push(`Осмотр (−${fmt(INSPECT)}): ${f.length?f.map(x=>DEF[x.key].n).join(", "):"ничего нового"}`);$("#bal").textContent=fmt(S.bal)}}
+    if(d.inspect){const ic=vip()?0:INSPECT;if(S.bal<ic)H.err="Не хватает денег на осмотр";else{S.bal-=ic;const f=c.defects.filter(x=>!x.disc&&Math.random()<.6);f.forEach(x=>x.disc=true);H.log.push(`Осмотр (−${fmt(ic)}): ${f.length?f.map(x=>DEF[x.key].n).join(", "):"ничего нового"}`);$("#bal").textContent=fmt(S.bal)}}
     if(d.offer){const o=+$("#offer").value,bl=S.blocks[c.bot.name];
       if(bl>Date.now())H.err="Продавец вас заблокировал";else if(s.att>=ATT)H.err="Попытки закончились";
       else{const dd=c.defects.find(x=>x.id===H.arg&&x.disc),arg=dd?dd.cost:0;s.att++;
@@ -297,6 +355,7 @@ function act(e){
   if(d.rep){const[id,prov]=d.rep.split(":"),c=S.cars.find(x=>x.id==id);let mult,tm;
     if(prov==="own"){if(!operational()){flash[id]="Своя мастерская ещё не достроена";return render()}const[cm,t2]=mods();mult=Math.max(OWN_MIN,EXT*cm);tm=t2}
     else{mult=EXT;tm=1;c.defects.forEach(x=>{if(!x.disc&&Math.random()<.5)x.disc=true})}
+    if(vip()){mult*=VIP.repairCost;tm*=VIP.repairTime}
     const todo=c.defects.filter(x=>x.disc&&!x.rep&&DEF[x.key].r),tot=todo.reduce((s,x)=>s+Math.floor(x.cost*mult),0);
     if(!todo.length)flash[id]="Чинить нечего";else if(S.bal<tot)flash[id]=`Нужно ${fmt(tot)}`;
     else{S.bal-=tot;c.inv+=tot;c.status="service";let mx=0;todo.forEach(x=>{const h=DEF[x.key].hr*tm;mx=Math.max(mx,h);x.fix=Date.now()+h*TS});c.until=Date.now()+mx*TS;flash[id]=`Заказано: ${fmt(tot)}`}
@@ -311,6 +370,7 @@ function act(e){
     else{S.bal-=st.c;S.stages[st.k]={fin:Date.now()+st.h*TS,done:false}}render()}
 }
 document.addEventListener("click",act);
+document.addEventListener("input",e=>{const k=e.target.dataset.adm;if(k)adm[k]=e.target.value});
 document.addEventListener("change",e=>{const t=e.target;
   if(t.dataset.f){flt[t.dataset.f]=t.value;render()}
   if(t.id==="imgModel")imgSel=t.value;
