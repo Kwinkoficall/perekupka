@@ -29,25 +29,6 @@ nav button{background:none;color:#ecebe5;border-radius:0;padding:16px 0;font-siz
 .toast{position:fixed;top:12px;left:50%;transform:translateX(-50%);background:var(--sig);color:#fff;padding:10px 16px;border-radius:10px;z-index:120;max-width:90%;font-weight:600;box-shadow:0 4px 16px #0006}
 #lock{position:fixed;inset:0;background:var(--bg);z-index:99;display:none;align-items:center;justify-content:center;padding:16px}
 .done{background:var(--ink);color:var(--bg)}.lock{opacity:.5}.chip{font-size:12px;padding:4px 8px;border-radius:6px;border:1px solid var(--line);background:none;color:var(--ink)}.chip.on{background:var(--ink);color:var(--bg)}
-
-nav{grid-template-columns:repeat(5,minmax(0,1fr))}nav{z-index:20}
-nav button{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:9px 0 8px;font-size:11px;font-weight:400;color:#9aa0a5;background:none;border-radius:0}
-nav button.on{background:none;color:var(--tag);font-weight:600}
-nav svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
-.badge{top:4px;right:calc(50% - 22px)}
-.pic{position:relative}
-.mc .pic{margin:0;border-radius:0;padding:34px 4px 0}
-.ptag{position:absolute;left:0;top:12px;background:var(--tag);color:#1d2327;font-weight:800;font-size:19px;font-variant-numeric:tabular-nums;padding:4px 14px 4px 22px;clip-path:polygon(12px 0,100% 0,100% 100%,12px 100%,0 50%);z-index:2}
-.mb{position:absolute;right:12px;top:12px;font-size:12px;font-weight:700;border-radius:6px;padding:3px 8px;background:var(--line);color:var(--ink);z-index:2}
-.mb.gd{background:var(--good);color:#fff}.mb.bd{background:var(--bad);color:#fff}
-.dch{display:inline-block;background:rgba(200,55,45,.14);color:var(--bad);font-size:12px;font-weight:600;border-radius:6px;padding:2px 8px;margin:4px 6px 0 0}
-.tl{display:flex;gap:4px;margin-top:6px}.tl i{flex:1;height:6px;border-radius:3px;background:var(--line)}.tl i.d{background:var(--ink)}.tl i.c{background:var(--sig)}
-.tll{display:flex;justify-content:space-between;font-size:11.5px;color:var(--mute);margin-top:4px}.tll .c{color:var(--sig);font-weight:700}
-.goal{background:#1d2327;color:#ecebe5;border:1px solid var(--line);border-radius:12px;padding:14px;margin-bottom:10px}
-.goal .gb{flex:1;height:8px;background:#32383d;border-radius:4px}.goal .gb i{display:block;height:8px;background:var(--tag);border-radius:4px}
-.hot{flex:1;min-width:0;cursor:pointer;margin-bottom:0}.hot .mb{position:static;display:inline-block}
-h3.sec{margin:14px 0 8px;font-size:18px}
-.bub{max-width:80%}
 </style></head><body>
 <header><b style="font-size:19px">Перекуп <span id="vipb" class="tag" style="font-size:12px"></span></b><span class="n" id="bal" style="font-weight:700"></span></header>
 <main id="app"></main>
@@ -56,7 +37,7 @@ h3.sec{margin:14px 0 8px;font-size:18px}
 "use strict";
 // Адрес вашего Cloudflare Worker, например "https://perekup-bot.ваш-аккаунт.workers.dev". Пусто = игра без проверки подписки.
 const API="https://empty-waterfall-f93fperekup-bot.kwink483.workers.dev";
-let cloud=false,pushT=0,chUrl="",isAdmin=false,vipUntil=0,capBought=false,adm={t:"",a:"",n:"",msg:"",users:[]};
+let cloud=false,pushT=0,chUrl="",isAdmin=false,vipUntil=0,capBought=false,adm={t:"",a:"",n:"",d:"7",msg:"",users:[]};
 const vip=()=>vipUntil>Date.now();
 // Бонусы VIP — меняйте числа здесь
 const VIP={repairCost:.85,repairTime:.75,buyerRate:.6};
@@ -73,8 +54,7 @@ const MARKET_MS=120e3,REG=3500,REG_H=1,TS=60e3, EXT=1.15, OWN_MIN=.5, PEN=2, MAX
 // ================= состояние =================
 const KEY="perekup_v2";
 let S=JSON.parse(localStorage.getItem(KEY)||"null")||{bal:5e5,rep:50,bought:0,sold:0,margin:0,cars:[],market:[],deals:[],blocks:{},stages:{},demand:{},sess:{},id:1,tick:0};
-S.imgs=S.imgs||{};S.threads=S.threads||[];
-function goalTick(){const d=new Date().toDateString();if(!S.goal||S.goal.d!==d)S.goal={d,n:0,c:false}}let imgSel="Toyota Camry";
+S.imgs=S.imgs||{};S.threads=S.threads||[];let imgSel="Toyota Camry";
 const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){alert("Не хватило места в памяти браузера — картинка слишком тяжёлая.")}
   cloudSoon()};
 const R=(a,b)=>a+Math.random()*(b-a), pick=a=>a[Math.floor(Math.random()*a.length)], fmt=n=>Math.round(n).toLocaleString("ru-RU")+" ₽";
@@ -128,13 +108,13 @@ const DEFSVG={rusty_floor:'<g fill="#8a3f16"><ellipse cx="96" cy="77" rx="9" ry=
  welded_body:'<path d="M118 50 V78" stroke="#e07b1a" stroke-width="2.5" stroke-dasharray="3 2"/>',
  carb_knock:'<g fill="#777" opacity=".65"><circle cx="212" cy="46" r="5"/><circle cx="220" cy="38" r="4"/><circle cx="228" cy="30" r="3"/></g>',
  cracked_block:'<path d="M200 55 l5 5 l-4 4 l6 6" stroke="#111" stroke-width="1.6" fill="none"/>'};
-function carSvg(c,ov){
+function carSvg(c){
   const t=TYPE[c.brand+" "+c.model]||"sedan",col=PAINT[c.color]||"#888",by=t==="suv"?82:80,pil=t==="suv"?"M100 26 V46":"M110 31 V48";
   const wheel=x=>`<circle cx="${x}" cy="${by}" r="18" fill="#14171a"/><circle cx="${x}" cy="${by}" r="15" fill="#2a2d31"/><circle cx="${x}" cy="${by}" r="8" fill="#b5bbc0"/><circle cx="${x}" cy="${by}" r="3" fill="#6b7176"/>`;
   const dd=c.defects.filter(d=>d.disc&&!d.rep).map(d=>DEFSVG[d.key]||"").join("");
   const key=c.brand+" "+c.model,src=S.imgs[key]||`img/${key.replace(/\s/g,"-")}.jpg`;
   const photo=`<img alt="${key}" src="${src}" style="display:none" onload="this.style.display='block';this.nextElementSibling.style.display='none'" onerror="if(!this.dataset.t&&this.src.endsWith('.jpg')){this.dataset.t=1;this.src=this.src.replace('.jpg','.png')}">`;
-  return`<div class="pic">${ov||""}${photo}<svg viewBox="0 0 242 108" role="img" aria-label="${c.brand} ${c.model}, ${c.color}"><ellipse cx="121" cy="99" rx="102" ry="5" fill="#0003"/>
+  return`<div class="pic">${photo}<svg viewBox="0 0 242 108" role="img" aria-label="${c.brand} ${c.model}, ${c.color}"><ellipse cx="121" cy="99" rx="102" ry="5" fill="#0003"/>
   <path d="${BODY[t]}" fill="${col}" stroke="#0004" stroke-width="1.2"/><path d="${GLASS[t]}" fill="#9fc3d9" stroke="#0004"/><path d="${pil}" stroke="#0005" stroke-width="2"/>
   <path d="M78 52 V78 M160 52 V78" stroke="#0003" fill="none"/><rect x="224" y="58" width="8" height="5" fill="#ffe9a8"/><rect x="10" y="62" width="5" height="6" fill="#c0342b"/>
   ${wheel(60)}${wheel(180)}${dd}</svg></div>`;
@@ -158,7 +138,7 @@ function complete(th,price){const c=S.cars.find(x=>x.id===th.car);
   if(!c||c.status!=="for_sale"){th.st="closed";return}
   const known=c.defects.filter(d=>!d.rep&&d.disc),hid=c.listed.disclose?[]:known;
   if(hid.some(()=>Math.random()<.3)){th.st="closed";th.msgs.push({f:"b",t:"Мастер нашёл скрытый дефект. Сделки не будет."},{f:"s",t:"Покупатель ушёл."});closeThreads(c.id,"");return}
-  S.bal+=price;S.sold++;goalTick();S.goal.n++;const m=price-c.bought-c.inv;S.margin+=m;
+  S.bal+=price;S.sold++;const m=price-c.bought-c.inv;S.margin+=m;
   const dl=hid.length?-hid.reduce((s,x)=>s+DEF[x.key].sv*4,0):(known.length?1:.5);S.rep=Math.max(0,Math.min(100,S.rep+dl));
   S.deals.unshift({kind:"sell",title:th.title,price,margin:m,fraud:!!hid.length});
   th.st="done";th.msgs.push({f:"s",t:`Сделка: продано за ${fmt(price)}, маржа ${fmt(m)}${hid.length?" · репутация упала из-за скрытых дефектов":""}`});
@@ -214,15 +194,34 @@ function pushNow(){const{imgs,...st}=S;apiCall("/api/save","PUT",{state:st}).cat
 function toast(t){const d=document.createElement("div");d.className="toast";d.textContent=t;document.body.appendChild(d);setTimeout(()=>d.remove(),5000)}
 async function claimGrants(){if(!cloud)return;
   try{const r=await apiCall("/api/claim","POST");
+    if(r.vip_until!==undefined&&r.vip_until!==vipUntil){vipUntil=r.vip_until;$("#vipb").textContent=vip()?"VIP":"";if(!H&&!T)render()}
+    const svc=(r.grants||[]).filter(g=>g.kind==="service"),money=(r.grants||[]).filter(g=>g.kind!=="service");
+    if(svc.length){const last=svc[svc.length-1];
+      if(last.amount>0){STAGES.forEach(s=>{S.stages[s.k]={fin:Date.now(),done:true}});toast("🔧 Вам выдали «Свой сервис» — мастерская полностью построена!")}
+      else{S.stages={};toast("🔧 «Свой сервис» отключён администратором")}
+      save();clearTimeout(pushT);pushNow();if(!H&&!T)render()}
+    r.grants=money;
     if(r.grants&&r.grants.length){const sum=r.grants.reduce((a,g)=>a+g.amount,0);S.bal+=sum;save();clearTimeout(pushT);pushNow();
       const note=r.grants.map(g=>g.note).filter(Boolean).join("; ");toast(`${sum>0?"Вам выдали":"Списано"} ${fmt(Math.abs(sum))}${note?" · "+note:""}`);
       $("#bal").textContent=fmt(S.bal);if(!H&&!T)render()}
   }catch(e){if(e.status===403){cloud=false;lockSub()}}}
 async function loadUsers(){try{adm.users=(await apiCall("/api/admin/users","GET")).users}catch(e){adm.msg=e.message}if(tab==="profile"&&!H&&!T)render()}
+async function adminVip(revoke){const days=Math.round(+adm.d);
+  if(!adm.t.trim()||(!revoke&&!days)){adm.msg="Укажите получателя и число дней";return render()}
+  try{const r=await apiCall("/api/admin/vip","POST",{target:adm.t.trim(),days,revoke});
+    adm.msg=revoke?`VIP отключён у ${r.target.name} (${r.target.tg_id}).`:`VIP выдан: ${r.target.name} (${r.target.tg_id}) на ${days} дн. Игроку придёт сообщение от бота.`;
+    if(r.self){vipUntil=r.until}loadUsers()}catch(e){adm.msg=e.message}
+  render()}
 async function adminGrant(){const amount=Math.round(+adm.a);
   if(!adm.t.trim()||!amount){adm.msg="Укажите получателя и сумму";return render()}
   try{const r=await apiCall("/api/admin/grant","POST",{target:adm.t.trim(),amount,note:adm.n});
     adm.msg=`${amount>0?"Выдано":"Списано"} ${fmt(Math.abs(amount))} игроку ${r.target.name} (${r.target.tg_id}). Он получит деньги, когда зайдёт в игру.`;adm.a="";
+    if(r.self)claimGrants()}catch(e){adm.msg=e.message}
+  render()}
+async function adminService(revoke){
+  if(!adm.t.trim()){adm.msg="Укажите получателя";return render()}
+  try{const r=await apiCall("/api/admin/service","POST",{target:adm.t.trim(),revoke});
+    adm.msg=revoke?`«Свой сервис» отключён у ${r.target.name} (${r.target.tg_id}).`:`«Свой сервис» выдан: ${r.target.name} (${r.target.tg_id}). Появится, когда игрок зайдёт в игру.`;
     if(r.self)claimGrants()}catch(e){adm.msg=e.message}
   render()}
 async function recheck(){try{const r=await apiCall("/api/auth","POST");if(!r.subscribed){cloud=false;chUrl=r.channelUrl||chUrl;lockSub()}else{vipUntil=r.vip_until||0;capBought=!!r.capital}}catch(e){}}
@@ -262,59 +261,33 @@ function vShop(){
   <div class="card"><div class="row"><b style="font-size:18px">Стартовый капитал</b>${capBought?'<span class="chip2">получен</span>':""}</div>
   <p class="mute" style="margin:6px 0">+${fmt(2e6)} на баланс. Покупка разовая.</p><div class="gap"><button class="s" data-shop="capital" ${capBought?"disabled":""}>25 ⭐</button></div></div>`}
 // ================= UI =================
-const $=s=>document.querySelector(s);let tab="home",flt={brand:"",sort:"new",q:"all"},H=null,T=null,flash={};
-const TABS=[["home","Главная"],["market","Маркет"],["garage","Гараж"],["chat","Чаты"],["more","Ещё"]],MORE=["service","shop","profile"];
-const ICO={home:'<path d="M3 11 12 4l9 7"/><path d="M5 10v10h14V10"/>',market:'<circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/>',garage:'<path d="M3 17v-5l2-5h14l2 5v5"/><path d="M3 12h18"/><circle cx="7.5" cy="17" r="1.8"/><circle cx="16.5" cy="17" r="1.8"/>',chat:'<path d="M4 5h16v11H9l-5 4z"/>',more:'<path d="M4 7h16M4 12h16M4 17h16"/>'};
-const GOAL_N=2,GOAL_BONUS=40000;
+const $=s=>document.querySelector(s);let tab="market",flt={brand:"",sort:"new"},H=null,T=null,flash={};
+const TABS=[["market","Маркет"],["garage","Гараж"],["chat","Чаты"],["service","Сервис"],["shop","Магазин"],["profile","Профиль"]];
 const vis=c=>c.defects.filter(d=>d.disc);
 const defHtml=c=>{const v=vis(c);return v.length?"<div style='font-size:14px'>"+v.map(d=>`<div class="${d.rep?"mute":"bad"}" ${d.rep?"style='text-decoration:line-through'":""}>${DEF[d.key].n}${DEF[d.key].r?` · ремонт ~${fmt(d.cost)}`:""}</div>`).join("")+"</div>":"<div class='mute'>Явных дефектов нет</div>"};
 const cd=u=>{const s=Math.max(0,Math.round((u-Date.now())/1e3));return`<span class="n" data-until="${u}">${Math.floor(s/60)}:${String(s%60).padStart(2,"0")}</span>`};
 function drawNav(){const u=S.threads.filter(t=>t.unread).length;
-  $("#nav").innerHTML=TABS.map(([k,l])=>`<button class="${tab===k||(k==="more"&&MORE.includes(tab))?"on":""}" data-tab="${k}"><svg viewBox="0 0 24 24" aria-hidden="true">${ICO[k]}</svg>${l}${k==="chat"&&u?`<span class="badge">${u}</span>`:""}</button>`).join("")}
+  $("#nav").innerHTML=TABS.map(([k,l])=>`<button class="${tab===k?"on":""}" data-tab="${k}">${l}${k==="chat"&&u?`<span class="badge">${u}</span>`:""}</button>`).join("")}
 function render(){
   settle();ensureMarket();$("#bal").textContent=fmt(S.bal);$("#vipb").textContent=vip()?"VIP":"";
   drawNav();
-  $("#app").innerHTML=(MORE.includes(tab)?`<button class="g" data-tab="more" style="margin:0 0 8px;padding:6px 12px">‹ Ещё</button>`:"")+({home:vHome,market:vMarket,garage:vGarage,chat:vChat,more:vMore,service:vService,shop:vShop,profile:vProfile})[tab]();save();
+  $("#app").innerHTML=({market:vMarket,garage:vGarage,chat:vChat,service:vService,shop:vShop,profile:vProfile})[tab]();save();
 }
-
-function tlHtml(c){const i=c.status==="transit"?0:c.status==="for_sale"?2:1,L=["В пути",{service:"Сервис",reg:"Учёт"}[c.status]||"Гараж","Продажа","Сделка"];
-  return`<div class="tl">${L.map((_,k)=>`<i class="${k<i?"d":k===i?"c":""}"></i>`).join("")}</div><div class="tll">${L.map((t,k)=>`<span class="${k===i?"c":""}">${t}</span>`).join("")}</div>`}
-function vHome(){goalTick();
-  const g=S.goal,done=g.n>=GOAL_N,w=Math.min(100,g.n/GOAL_N*100),nx=Math.min(100,Math.floor(S.rep/10)*10+10);
-  const work=S.cars.filter(c=>!(c.keep&&c.status==="idle"));
-  const hot=vip()?S.market.map(c=>({c,p:c.ask/mktPrice(c)})).filter(x=>x.p<=.97).sort((a,b)=>a.p-b.p).slice(0,2):[];
-  return`<div class="card"><div class="row"><b>Репутация</b><span class="n mute">${S.rep.toFixed(0)} / 100</span></div><div class="bar" style="margin-top:8px"><i style="width:${S.rep}%"></i></div>
-  ${S.rep<100?`<div class="mute" style="font-size:12px;margin-top:6px">До ${nx}: покупатели платят чуть больше</div>`:""}</div>
-  <div class="goal"><div class="row" style="align-items:baseline"><span style="font-size:13px;color:#9aa0a5">Цель дня</span><span style="font-size:13px;color:var(--tag);font-weight:700">+${fmt(GOAL_BONUS)}</span></div>
-  <div style="font-size:18px;font-weight:700;margin:4px 0 10px">Продай ${GOAL_N} ${GOAL_N<5?"машины":"машин"}</div>
-  <div style="display:flex;align-items:center;gap:10px"><div class="gb"><i style="width:${w}%"></i></div><b class="n">${Math.min(g.n,GOAL_N)} / ${GOAL_N}</b></div>
-  ${done?(g.c?'<div style="margin-top:10px;font-size:13px;color:#9aa0a5">Награда получена. Новая цель завтра.</div>':'<div class="gap"><button class="s" data-goal="1">Забрать '+fmt(GOAL_BONUS)+'</button></div>'):""}</div>
-  <h3 class="sec">В работе</h3>
-  ${work.length?work.map(c=>`<div class="card"><div class="row"><b>${c.brand} ${c.model}, ${c.year}</b>${c.until>Date.now()?`<span style="color:var(--sig);font-weight:700">${cd(c.until)}</span>`:c.status==="for_sale"?`<span class="mute" style="font-size:13px">${S.threads.filter(t=>t.car===c.id&&(t.st==="open"||t.st==="ready")).length} диалог.</span>`:""}</div>${tlHtml(c)}</div>`).join(""):`<div class="card empty" style="padding:24px 16px"><b>Пока нет машин в работе</b><p class="mute" style="margin:6px 0 12px">Купи → почини → продай</p><button class="s" data-tab="market">К маркету</button></div>`}
-  <h3 class="sec">Горячие лоты</h3>
-  ${vip()?(hot.length?`<div class="row" style="flex-wrap:nowrap;gap:10px">${hot.map(({c,p})=>`<div class="card hot" data-open="${c.id}"><span class="mb gd">−${Math.round((1-p)*100)}% к рынку</span><div style="margin-top:6px"><b style="font-size:14px">${c.brand} ${c.model}, ${c.year}</b></div><div class="n" style="font-weight:800">${fmt(c.ask)}</div></div>`).join("")}</div>`:"<div class='mute'>Выгодных лотов пока нет</div>"):`<div class="card"><div class="mute">Рыночные цены и выгодные лоты — только для VIP.</div><div class="gap"><button class="s" data-tab="shop">Открыть магазин</button></div></div>`}`}
-function vMore(){
-  const it=[["service","Сервис","Своя мастерская: ремонт дешевле и быстрее"],["shop","Магазин","VIP и стартовый капитал за Telegram Stars"],["profile","Профиль","Репутация, история сделок, настройки"]];
-  return`<h2 style="margin:4px 0 10px;font-size:30px">Ещё</h2>`+it.map(([k,t,d])=>`<button class="card" data-tab="${k}" style="display:block;width:100%;text-align:left;background:var(--card);color:var(--ink);font-weight:400;padding:12px"><b style="font-size:17px">${t}</b><div class="mute">${d}</div></button>`).join("")}
 function vMarket(){
-  let l=S.market.filter(c=>(!flt.brand||c.brand===flt.brand)&&(flt.q==="clean"?!vis(c).length:flt.q==="deal"?(vip()&&c.ask<=mktPrice(c)*.97):true));
+  let l=S.market.filter(c=>!flt.brand||c.brand===flt.brand);
   l.sort((a,b)=>flt.sort==="price"?a.ask-b.ask:flt.sort==="year"?b.year-a.year:b.t-a.t);
   const br=["",...new Set(Object.keys(MODELS).map(n=>n.split(" ")[0]))].sort();
-  return`<h2 style="margin:4px 0 10px;font-size:30px">Маркет</h2>
-  <div class="gap" style="margin:0 0 8px;flex-wrap:nowrap;overflow:auto">${[["all","Все"],["deal","Выгодные"],["clean","Без дефектов"]].map(([k,t])=>`<button class="chip ${flt.q===k?"on":""}" style="flex:0 0 auto;padding:7px 14px;border-radius:16px" data-q="${k}">${t}</button>`).join("")}</div>
-  <div class="gap" style="margin:0 0 10px"><select data-f="brand">${br.map(b=>`<option value="${b}" ${flt.brand===b?"selected":""}>${b||"Все марки"}</option>`).join("")}</select>
+  return`<div class="gap" style="margin:0 0 10px"><select data-f="brand">${br.map(b=>`<option value="${b}" ${flt.brand===b?"selected":""}>${b||"Все марки"}</option>`).join("")}</select>
   <select data-f="sort">${[["new","Новые"],["price","Дешевле"],["year","Свежее"]].map(([v,t])=>`<option value="${v}" ${flt.sort===v?"selected":""}>${t}</option>`).join("")}</select></div>`+
-  l.map(c=>{const mp=vip()?mktPrice(c):0,m=vip()?Math.round((c.ask-mp)/mp*100):null,
-    bd=m===null?"":`<span class="mb ${m<=-3?"gd":m>=3?"bd":""}">${Math.abs(m)<3?"по рынку":m<0?`−${-m}% к рынку`:`+${m}% к рынку`}</span>`,
-    ov=`<span class="ptag">${fmt(c.ask)}</span>${bd}`;
-    return`<div class="card mc" data-open="${c.id}" style="cursor:pointer;padding:0;overflow:hidden">${carSvg(c,ov)}<div style="padding:10px 12px 12px"><div class="row"><b style="font-size:17px">${c.brand} ${c.model}, ${c.year}</b><span class="mute" style="font-size:12px">${c.bot.name}</span></div><div class="mute">${fmt(c.kmShown).replace(" ₽","")} км · ${c.color} · ${c.owners} влад.</div>${vis(c).length?vis(c).map(d=>`<span class="dch">${DEF[d.key].n}</span>`).join(""):"<div class='mute' style='font-size:13px'>Явных дефектов нет</div>"}</div></div>`}).join("")||"<p class='mute'>Лента обновляется.</p>";
+  l.map(c=>`<div class="card" data-open="${c.id}" style="cursor:pointer">${carSvg(c)}<div class="row"><div><b>${c.brand} ${c.model}, ${c.year}</b><div class="mute">${fmt(c.kmShown).replace(" ₽","")} км · ${c.color} · ${c.owners} влад.</div>${mktLine(c,c.ask)}</div><span class="tag n">${fmt(c.ask)}</span></div>
+  ${vis(c).length?`<div class="bad" style="font-size:12px;margin-top:4px">${vis(c).map(d=>DEF[d.key].n).join(", ")}</div>`:""}</div>`).join("")||"<p class='mute'>Лента обновляется.</p>";
 }
 function plate(){const L="АВЕКМНОРСТУХ",r=()=>L[Math.floor(Math.random()*L.length)];return`${r()}${100+Math.floor(Math.random()*899)}${r()}${r()} ${pick(["77","78","50","16","02","66","23","54","99","116","178"])}`}
 function vGarage(){
   const L={transit:"В пути",idle:"Готова",service:"В сервисе",reg:"Постановка на учёт",for_sale:"На продаже"};
   if(!S.cars.length)return"<p class='mute'>Гараж пуст. Купите машину на маркетплейсе.</p>";
   return S.cars.map(c=>`<div class="card">${carSvg(c)}<div class="row"><b>${c.brand} ${c.model}, ${c.year}${c.keep?" · моя":""}</b><span style="font-size:14px">${L[c.status]} ${c.until>Date.now()?cd(c.until):""}</span></div>
-  ${tlHtml(c)}${c.plate?`<span class="plate n">${c.plate}</span>`:""}
+  ${c.plate?`<span class="plate n">${c.plate}</span>`:""}
   <div class="mute n">Куплена за ${fmt(c.bought)} · вложено ${fmt(c.inv)}</div><div class="mute">${vip()?`Рыночная цена сейчас ≈ <b>${fmt(mktPrice(c))}</b>`:"🔒 Рыночная цена — только для VIP"}</div>${defHtml(c)}
   ${c.status==="idle"?`<div class="gap"><button class="g" data-rep="${c.id}:ext">В чужой сервис</button><button class="g" data-rep="${c.id}:own">В свою мастерскую</button></div>
   <div class="gap">${c.plate?"":`<button class="g" data-reg="${c.id}">На учёт · ${fmt(REG)}</button>`}<button class="g" data-keep="${c.id}">${c.keep?"Убрать из личных":"Оставить себе"}</button></div>
@@ -345,8 +318,12 @@ function vProfile(){
   <div class="gap"><input data-adm="n" placeholder="Комментарий (необязательно)" value="${esc(adm.n)}"></div>
   <div class="gap"><button class="s" data-admgrant="1">Выдать</button></div>
   <div class="sig" style="font-size:14px;margin-top:6px">${esc(adm.msg)}</div>
+  <div class="gap" style="align-items:center;margin-top:12px"><input type="number" data-adm="d" placeholder="Дней VIP" value="${esc(adm.d)}"><button class="s" data-admvip="1" style="flex:0 0 auto">Выдать VIP</button></div>
+  <div class="gap"><button class="chip" data-admdays="7">7 дн.</button><button class="chip" data-admdays="14">14 дн.</button><button class="chip" data-admdays="30">30 дн.</button><button class="chip" data-admrevoke="1">Забрать VIP</button></div>
+  <div class="gap" style="align-items:center;margin-top:12px"><span style="flex:1"><b>🔧 Свой сервис</b><br><span class="mute" style="font-size:13px">Мастерская сразу со всеми этапами</span></span></div>
+  <div class="gap"><button class="s" data-admsvc="1">Выдать сервис</button><button class="chip" data-admsvcrevoke="1">Забрать сервис</button></div>
   <div class="row" style="margin-top:10px"><b>Игроки</b><button class="chip" data-admload="1">Обновить</button></div>
-  ${adm.users.map(u=>`<div class="row mute" data-admpick="${u.tg_id}" style="border-bottom:1px solid var(--line);padding:6px 0;cursor:pointer"><span>${esc(u.first_name)} ${u.username?"@"+esc(u.username):""}</span><span class="n">${u.tg_id}</span></div>`).join("")}`:""}
+  ${adm.users.map(u=>`<div class="row mute" data-admpick="${u.tg_id}" style="border-bottom:1px solid var(--line);padding:6px 0;cursor:pointer"><span>${esc(u.first_name)} ${u.username?"@"+esc(u.username):""} ${u.vip_until>Date.now()?'<span class="chip2">VIP</span>':""}</span><span class="n">${u.tg_id}</span></div>`).join("")}`:""}
   <div class="gap"><button class="g" data-reset="1">Начать заново</button></div>`;
 }
 // ================= модалка торга =================
@@ -356,9 +333,9 @@ function drawHaggle(){
   $("#sheet").innerHTML=`${carSvg(c)}<div class="row"><h2 style="margin:0">${c.brand} ${c.model}, ${c.year}</h2><span class="tag n">${fmt(price)}</span></div>
   <div class="mute">${fmt(c.kmShown).replace(" ₽","")} км · владельцев ${c.owners} · ${c.color} · продавец ${c.bot.name}</div>${mktLine(c,price)}${defHtml(c)}
   ${vis(c).filter(d=>DEF[d.key].r).length&&!H.dead?`<div class="gap">${vis(c).filter(d=>DEF[d.key].r).map(d=>`<button class="chip ${H.arg===d.id?"on":""}" style="flex:0 0 auto" data-arg="${d.id}">Довод: ${DEF[d.key].n}</button>`).join("")}</div>`:""}
-  <div style="margin:8px 0;display:flex;flex-direction:column;gap:6px">${H.log.map(t=>t.startsWith("Вы:")?`<div style="display:flex;justify-content:flex-end"><div class="bub me">Предлагаю ${t.slice(3).trim()}</div></div>`:t.startsWith("Осмотр")?`<div class="mute" style="text-align:center;font-size:13px">${t}</div>`:`<div style="display:flex"><div class="bub">${t.replace(c.bot.name+": ","")}</div></div>`).join("")}</div><div class="bad" style="font-size:14px">${H.err}</div>
+  <div class="log">${H.log.map(t=>`<div>${t}</div>`).join("")}</div><div class="bad" style="font-size:14px">${H.err}</div>
   ${H.dead?"<b class='bad'>Сделка сорвана: продавец заблокировал вас на 30 минут.</b><div class='gap'><button class='g' data-close='1'>Закрыть</button></div>":
-  `<div class="gap">${[5,10,15].map(p=>`<button class="g" data-qo="${p}">−${p}%</button>`).join("")}</div><div class="gap" style="align-items:center"><input type="number" step="1000" id="offer" value="${H.offer||suggest}"><button data-offer="1" style="flex:0 0 auto" ${left<=0?"disabled":""}>Предложить (${left})</button></div>
+  `<div class="gap" style="align-items:center"><input type="number" step="1000" id="offer" value="${H.offer||suggest}"><button data-offer="1" style="flex:0 0 auto" ${left<=0?"disabled":""}>Предложить (${left})</button></div>
   <div class="gap"><button class="g" data-inspect="1">Осмотр ${vip()?"бесплатно (VIP)":fmt(INSPECT)}</button><button class="s" data-buy="1" style="flex:2">Купить за ${fmt(price)}</button></div><div class="gap"><button class="g" data-close="1">Закрыть</button></div>`}`;
   $("#modal").classList.add("open");
 }
@@ -368,12 +345,15 @@ function act(e){
   if(d.sub){chUrl&&(tg?.openTelegramLink?tg.openTelegramLink(chUrl):window.open(chUrl,"_blank"));return}
   if(d.recheck){boot();return}
   if(d.shop){buyShop(d.shop);return}
-  if(d.goal){goalTick();if(S.goal.n>=GOAL_N&&!S.goal.c){S.goal.c=true;S.bal+=GOAL_BONUS;save();toast("Цель дня выполнена: +"+fmt(GOAL_BONUS))}render();return}
-  if(d.q){if(d.q==="deal"&&!vip()){toast("Рыночные цены — только для VIP");return}flt.q=d.q;render();return}
   if(d.admself){adm.t=String(tg?.initDataUnsafe?.user?.id||"");render();return}
   if(d.admpick){adm.t=d.admpick;render();return}
   if(d.admload){loadUsers();return}
   if(d.admgrant){adminGrant();return}
+  if(d.admvip){adminVip(false);return}
+  if(d.admrevoke){adminVip(true);return}
+  if(d.admsvc){adminService(false);return}
+  if(d.admsvcrevoke){adminService(true);return}
+  if(d.admdays){adm.d=d.admdays;render();return}
   if(d.tab){tab=d.tab;flash={};render();if(tab==="profile"&&isAdmin&&!adm.users.length)loadUsers();return}
   if(d.open){openHaggle(+d.open);return}
   if(d.thread){T=+d.thread;terr="";S.threads.find(x=>x.id===T).unread=false;save();drawNav();drawThread();return}
@@ -383,7 +363,6 @@ function act(e){
   if(d.reset){if(confirm("Удалить весь прогресс?")){localStorage.removeItem(KEY);location.reload()}return}
   if(H){const c=S.market.find(x=>x.id===H.id),s=S.sess[H.id];H.err="";
     if(d.arg){H.arg=H.arg===+d.arg?0:+d.arg;H.offer=+$("#offer").value}
-    if(d.qo){H.offer=Math.round((s.agr||c.ask)*(1-d.qo/100)/1e3)*1e3}
     if(d.inspect){const ic=vip()?0:INSPECT;if(S.bal<ic)H.err="Не хватает денег на осмотр";else{S.bal-=ic;const f=c.defects.filter(x=>!x.disc&&Math.random()<.6);f.forEach(x=>x.disc=true);H.log.push(`Осмотр (−${fmt(ic)}): ${f.length?f.map(x=>DEF[x.key].n).join(", "):"ничего нового"}`);$("#bal").textContent=fmt(S.bal)}}
     if(d.offer){const o=+$("#offer").value,bl=S.blocks[c.bot.name];
       if(bl>Date.now())H.err="Продавец вас заблокировал";else if(s.att>=ATT)H.err="Попытки закончились";
