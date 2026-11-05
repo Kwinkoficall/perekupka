@@ -137,7 +137,7 @@ const MARKET_MS=120e3,REG=3500,REG_H=1,TS=60e3, EXT=1.15, OWN_MIN=.5, PEN=2, MAX
 // ================= состояние =================
 const KEY="perekup_v2";
 let S=JSON.parse(localStorage.getItem(KEY)||"null")||{bal:5e5,rep:50,bought:0,sold:0,margin:0,cars:[],market:[],deals:[],blocks:{},stages:{},demand:{},sess:{},id:1,tick:0};
-S.imgs=S.imgs||{};S.threads=S.threads||[];let imgSel="Toyota Camry";
+S.imgs={};S.threads=S.threads||[];
 const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){alert("Не хватило места в памяти браузера — картинка слишком тяжёлая.")}
   cloudSoon()};
 const R=(a,b)=>a+Math.random()*(b-a), pick=a=>a[Math.floor(Math.random()*a.length)], fmt=n=>Math.round(n).toLocaleString("ru-RU")+" ₽";
@@ -195,7 +195,7 @@ function carSvg(c){
   const t=TYPE[c.brand+" "+c.model]||"sedan",col=PAINT[c.color]||"#888",by=t==="suv"?82:80,pil=t==="suv"?"M100 26 V46":"M110 31 V48";
   const wheel=x=>`<circle cx="${x}" cy="${by}" r="18" fill="#14171a"/><circle cx="${x}" cy="${by}" r="15" fill="#2a2d31"/><circle cx="${x}" cy="${by}" r="8" fill="#b5bbc0"/><circle cx="${x}" cy="${by}" r="3" fill="#6b7176"/>`;
   const dd=c.defects.filter(d=>d.disc&&!d.rep).map(d=>DEFSVG[d.key]||"").join("");
-  const key=c.brand+" "+c.model,src=S.imgs[key]||`img/${key.replace(/\s/g,"-")}.jpg`;
+  const key=c.brand+" "+c.model,src=`img/${key.replace(/\s/g,"-")}.jpg`;
   const photo=`<img alt="${key}" src="${src}" style="display:none" onload="this.style.display='block';this.nextElementSibling.style.display='none'" onerror="if(!this.dataset.t&&this.src.endsWith('.jpg')){this.dataset.t=1;this.src=this.src.replace('.jpg','.png')}">`;
   return`<div class="pic">${photo}<svg viewBox="0 0 242 108" role="img" aria-label="${c.brand} ${c.model}, ${c.color}"><ellipse cx="121" cy="99" rx="102" ry="5" fill="#0003"/>
   <path d="${BODY[t]}" fill="${col}" stroke="#0004" stroke-width="1.2"/><path d="${GLASS[t]}" fill="#9fc3d9" stroke="#0004"/><path d="${pil}" stroke="#0005" stroke-width="2"/>
@@ -465,9 +465,6 @@ function vProfile(){
   <p class="n mute">Личных авто: ${S.cars.filter(c=>c.keep).length} · на учёте: ${S.cars.filter(c=>c.plate).length}<br>Куплено ${S.bought} · продано ${S.sold} · средняя маржа ${fmt(avg)}</p>
   ${refHtml()}
   ${S.deals.slice(0,30).map(d=>`<div class="row mute" style="border-bottom:1px solid var(--line);padding:4px 0"><span>${d.kind==="buy"?"Покупка":"Продажа"}: ${d.title}${d.fraud?" (скрыт дефект)":""}</span><span class="n">${fmt(d.price)}</span></div>`).join("")}
-  <h3 style="margin:16px 0 4px">Свои картинки машин</h3><p class="mute" style="margin:0 0 8px">Выберите модель и загрузите фото — оно заменит рисунок. Хранится в вашем браузере.</p>
-  <div class="gap"><select id="imgModel">${Object.keys(MODELS).map(m=>`<option ${m===imgSel?"selected":""}>${m}</option>`).join("")}</select><button class="g" data-imgreset="1">Сбросить</button></div>
-  <div class="gap"><input type="file" id="imgFile" accept="image/*"></div>
   ${isAdmin?`<h3 style="margin:16px 0 4px">Админ-панель</h3>
   <div class="gap" style="align-items:center"><input data-adm="t" placeholder="ID или @username" value="${esc(adm.t)}"><button class="g" data-admself="1" style="flex:0 0 auto">Себе</button></div>
   <div class="gap"><input type="number" data-adm="a" placeholder="Сумма, ₽ (минус — забрать)" value="${esc(adm.a)}"></div>
@@ -525,7 +522,6 @@ function act(e){
   if(d.thread){T=+d.thread;terr="";S.threads.find(x=>x.id===T).unread=false;save();drawNav();drawThread();return}
   if(T&&!d.close){threadAct(d);return}
   if(d.close){closeM();return}
-  if(d.imgreset){delete S.imgs[imgSel];render();return}
   if(d.reset){if(confirm("Удалить весь прогресс?")){localStorage.removeItem(KEY);location.reload()}return}
   if(H){const c=S.market.find(x=>x.id===H.id),s=S.sess[H.id];H.err="";
     if(d.arg){H.arg=H.arg===+d.arg?0:+d.arg;H.offer=+$("#offer").value}
@@ -567,10 +563,7 @@ document.addEventListener("click",act);
 document.addEventListener("input",e=>{const k=e.target.dataset.adm;if(k)adm[k]=e.target.value});
 document.addEventListener("change",e=>{const t=e.target;
   if(t.dataset.f){flt[t.dataset.f]=t.value;render()}
-  if(t.id==="imgModel")imgSel=t.value;
-  if(t.id==="imgFile"&&t.files[0]){const im=new Image(),u=URL.createObjectURL(t.files[0]);
-    im.onload=()=>{const k=Math.min(1,640/im.width),cv=document.createElement("canvas");cv.width=im.width*k;cv.height=im.height*k;cv.getContext("2d").drawImage(im,0,0,cv.width,cv.height);
-      S.imgs[imgSel]=cv.toDataURL("image/jpeg",.8);URL.revokeObjectURL(u);render()};im.src=u}});
+});
 setInterval(()=>{settle();const ch=tickSales();if(H||T){if(ch)drawNav();return}
   if(tab==="market"&&Date.now()-S.tick>MARKET_MS){render();return}
   if(ch&&tab!=="market"){render();return}
