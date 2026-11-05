@@ -191,12 +191,67 @@ const DEFSVG={rusty_floor:'<g fill="#8a3f16"><ellipse cx="96" cy="77" rx="9" ry=
  welded_body:'<path d="M118 50 V78" stroke="#e07b1a" stroke-width="2.5" stroke-dasharray="3 2"/>',
  carb_knock:'<g fill="#777" opacity=".65"><circle cx="212" cy="46" r="5"/><circle cx="220" cy="38" r="4"/><circle cx="228" cy="30" r="3"/></g>',
  cracked_block:'<path d="M200 55 l5 5 l-4 4 l6 6" stroke="#111" stroke-width="1.6" fill="none"/>'};
+// ===== автоперекрас фото машин под цвет из игры =====
+const RC_CACHE={},RC_NEUTRAL=false; // true — пробовать перекрашивать и белые/чёрные/серые фото (бывает пятнами)
+function rgb2hsl(r,g,b){r/=255;g/=255;b/=255;const mx=Math.max(r,g,b),mn=Math.min(r,g,b),l=(mx+mn)/2;let h=0,s=0;
+  if(mx!==mn){const d=mx-mn;s=l>.5?d/(2-mx-mn):d/(mx+mn);h=mx===r?(g-b)/d+(g<b?6:0):mx===g?(b-r)/d+2:(r-g)/d+4;h*=60}return[h,s,l]}
+function hsl2rgb(h,s,l){const k=n=>(n+h/30)%12,a=s*Math.min(l,1-l),f=n=>l-a*Math.max(-1,Math.min(k(n)-3,9-k(n),1));return[f(0)*255,f(8)*255,f(4)*255]}
+function recolorData(d,W,H,target){
+  const N=W*H,px=d.data,hs=new Float32Array(N*3);
+  for(let i=0;i<N;i++){const q=rgb2hsl(px[i*4],px[i*4+1],px[i*4+2]);hs[i*3]=q[0];hs[i*3+1]=q[1];hs[i*3+2]=q[2]}
+  // 1) фон: заливка от краёв по похожему цвету
+  const bg=new Uint8Array(N),st=[];const dist=(a,b)=>Math.abs(px[a*4]-px[b*4])+Math.abs(px[a*4+1]-px[b*4+1])+Math.abs(px[a*4+2]-px[b*4+2]);
+  for(let x=0;x<W;x++){st.push(x,(H-1)*W+x)}for(let y=0;y<H;y++){st.push(y*W,y*W+W-1)}
+  st.forEach(i=>bg[i]=1);const bc=[0,1,2].map(k=>{const v=st.map(i=>px[i*4+k]).sort((x,y)=>x-y);return v[v.length>>1]});
+  const far=j=>Math.abs(px[j*4]-bc[0])+Math.abs(px[j*4+1]-bc[1])+Math.abs(px[j*4+2]-bc[2])>60;
+  while(st.length){const i=st.pop(),x=i%W,y=(i/W)|0;for(const j of[x>0?i-1:-1,x<W-1?i+1:-1,y>0?i-W:-1,y<H-1?i+W:-1])if(j>=0&&!bg[j]&&dist(i,j)<18&&!far(j)){bg[j]=1;st.push(j)}}
+  // 2) главный оттенок кузова среди пикселей машины
+  const hist=new Float32Array(36);let car=0;
+  for(let i=0;i<N;i++)if(!bg[i]){car++;const s=hs[i*3+1],l=hs[i*3+2];if(s>.3&&l>.15&&l<.85)hist[(hs[i*3]/10|0)%36]+=s}
+  if(car<N*.05)return false;
+  let hb=0;for(let k=0;k<36;k++){const v=hist[k]+hist[(k+35)%36]+hist[(k+1)%36];if(v>hist[hb]+hist[(hb+35)%36]+hist[(hb+1)%36])hb=k}
+  const hv=hist[hb]+hist[(hb+35)%36]+hist[(hb+1)%36],colored=hv>car*.08,H0=hb*10+5;
+  if(!colored&&!RC_NEUTRAL)return false; // белые/чёрные/серые фото не трогаем
+  // 3) маска кузова (для белых/чёрных/серых — самая частая яркость среди бесцветных пикселей)
+  let L0=0;if(!colored){const lh=new Float32Array(20);for(let i=0;i<N;i++)if(!bg[i]&&hs[i*3+1]<.18)lh[Math.min(19,hs[i*3+2]*20|0)]++;
+    let b=0;for(let k=1;k<20;k++)if(lh[k]>lh[b])b=k;L0=(b+.5)/20}
+  let nm=null;if(!colored){nm=new Float32Array(N);const lab=new Int32Array(N);const sz=[0];let id=0;
+    const ok=i=>!bg[i]&&hs[i*3+1]<.2&&hs[i*3+2]>L0-.3&&hs[i*3+2]<L0+.3;
+    for(let i0=0;i0<N;i0++){if(lab[i0]||!ok(i0)||Math.abs(hs[i0*3+2]-L0)>.04)continue;id++;let n=0;const q=[i0];lab[i0]=id;
+      while(q.length){const i=q.pop(),x=i%W,y=(i/W)|0;n++;for(const j of[x>0?i-1:-1,x<W-1?i+1:-1,y>0?i-W:-1,y<H-1?i+W:-1])
+        if(j>=0&&!lab[j]&&ok(j)&&Math.abs(hs[j*3+2]-hs[i*3+2])<.035){lab[j]=id;q.push(j)}}
+      sz[id]=n}
+    for(let i=0;i<N;i++)if(lab[i]&&sz[lab[i]]>car*.02)nm[i]=1}
+  const w=new Float32Array(N),ls=[];
+  for(let i=0;i<N;i++){if(bg[i])continue;const h=hs[i*3],s=hs[i*3+1],l=hs[i*3+2];let m=0;
+    if(colored){const dh=Math.min(Math.abs(h-H0),360-Math.abs(h-H0));m=s<.12?0:Math.max(0,Math.min(1,(40-dh)/15))*Math.min(1,(s-.12)/.15)}
+    else m=nm[i]
+    w[i]=m;if(m>.5)ls.push(l)}
+  if(ls.length<car*.1)return false;
+  ls.sort((a,b)=>a-b);const Lm=ls[ls.length>>1];
+  // 4) перекрас с сохранением бликов и теней
+  const[th,ts,tl]=rgb2hsl(...target);
+  for(let i=0;i<N;i++){const m=w[i];if(!m)continue;const l=hs[i*3+2];
+    const nl=Math.max(0,Math.min(1,tl+(l-Lm)*(tl<.25?.6:.9))),c=hsl2rgb(th,ts,nl),o=i*4;
+    for(let k=0;k<3;k++)px[o+k]=px[o+k]*(1-m)+c[k]*m}
+  return true}
+function recolor(img,color){
+  if(img.dataset.rc){img.style.display="block";img.nextElementSibling.style.display="none";return}
+  img.dataset.rc=1;const hex=PAINT[color],key=img.src+"|"+color;
+  const show=src=>{if(src)img.src=src;img.style.display="block";img.nextElementSibling.style.display="none"};
+  if(RC_CACHE[key]!==undefined)return show(RC_CACHE[key]);
+  try{const k=Math.min(1,520/img.naturalWidth),W=Math.round(img.naturalWidth*k),H=Math.round(img.naturalHeight*k);
+    const cv=document.createElement("canvas");cv.width=W;cv.height=H;const cx=cv.getContext("2d",{willReadFrequently:true});cx.drawImage(img,0,0,W,H);
+    const d=cx.getImageData(0,0,W,H),t=[1,3,5].map(i=>parseInt(hex.slice(i,i+2),16));
+    if(hex&&recolorData(d,W,H,t)){cx.putImageData(d,0,0);RC_CACHE[key]=cv.toDataURL("image/jpeg",.85)}else RC_CACHE[key]=null;
+  }catch(e){RC_CACHE[key]=null}
+  show(RC_CACHE[key])}
 function carSvg(c){
   const t=TYPE[c.brand+" "+c.model]||"sedan",col=PAINT[c.color]||"#888",by=t==="suv"?82:80,pil=t==="suv"?"M100 26 V46":"M110 31 V48";
   const wheel=x=>`<circle cx="${x}" cy="${by}" r="18" fill="#14171a"/><circle cx="${x}" cy="${by}" r="15" fill="#2a2d31"/><circle cx="${x}" cy="${by}" r="8" fill="#b5bbc0"/><circle cx="${x}" cy="${by}" r="3" fill="#6b7176"/>`;
   const dd=c.defects.filter(d=>d.disc&&!d.rep).map(d=>DEFSVG[d.key]||"").join("");
   const key=c.brand+" "+c.model,src=`img/${key.replace(/\s/g,"-")}.jpg`;
-  const photo=`<img alt="${key}" src="${src}" style="display:none" onload="this.style.display='block';this.nextElementSibling.style.display='none'" onerror="if(!this.dataset.t&&this.src.endsWith('.jpg')){this.dataset.t=1;this.src=this.src.replace('.jpg','.png')}">`;
+  const photo=`<img alt="${key}" src="${src}" style="display:none" onload="recolor(this,'${c.color}')" onerror="if(!this.dataset.t&&this.src.endsWith('.jpg')){this.dataset.t=1;this.src=this.src.replace('.jpg','.png')}">`;
   return`<div class="pic">${photo}<svg viewBox="0 0 242 108" role="img" aria-label="${c.brand} ${c.model}, ${c.color}"><ellipse cx="121" cy="99" rx="102" ry="5" fill="#0003"/>
   <path d="${BODY[t]}" fill="${col}" stroke="#0004" stroke-width="1.2"/><path d="${GLASS[t]}" fill="#9fc3d9" stroke="#0004"/><path d="${pil}" stroke="#0005" stroke-width="2"/>
   <path d="M78 52 V78 M160 52 V78" stroke="#0003" fill="none"/><rect x="224" y="58" width="8" height="5" fill="#ffe9a8"/><rect x="10" y="62" width="5" height="6" fill="#c0342b"/>
