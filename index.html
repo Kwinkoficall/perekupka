@@ -136,7 +136,7 @@ const MIN={"Hyundai Creta":2016,"Hyundai Solaris":2010,"Kia Ceed":2007,"Lada Ves
 const MARKET_MS=120e3,REG=3500,REG_H=1,TS=60e3, EXT=1.15, OWN_MIN=.5, PEN=2, MAXL=40, ATT=4, BLOCK=30*60e3, INSPECT=3e3, YEAR=2026;
 // ================= состояние =================
 const KEY="perekup_v2";
-let S=JSON.parse(localStorage.getItem(KEY)||"null")||{bal:5e5,rep:50,bought:0,sold:0,margin:0,cars:[],market:[],deals:[],blocks:{},stages:{},demand:{},sess:{},id:1,tick:0};
+let S=JSON.parse(localStorage.getItem(KEY)||"null")||{bal:15e4,rep:50,bought:0,sold:0,margin:0,cars:[],market:[],deals:[],blocks:{},stages:{},demand:{},sess:{},id:1,tick:0};
 S.imgs={};S.threads=S.threads||[];
 const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){alert("Не хватило места в памяти браузера — картинка слишком тяжёлая.")}
   cloudSoon()};
@@ -279,7 +279,7 @@ function complete(th,price){const c=S.cars.find(x=>x.id===th.car);
   S.bal+=price;S.sold++;const m=price-c.bought-c.inv;S.margin+=m;
   const dl=hid.length?-hid.reduce((s,x)=>s+DEF[x.key].sv*4,0):(known.length?1:.5);S.rep=Math.max(0,Math.min(100,S.rep+dl));
   S.deals.unshift({kind:"sell",title:th.title,price,margin:m,fraud:!!hid.length});
-  th.st="done";th.msgs.push({f:"s",t:`Сделка: продано за ${fmt(price)}, маржа ${fmt(m)}${hid.length?" · репутация упала из-за скрытых дефектов":""}`});
+  sfx("win");th.st="done";th.msgs.push({f:"s",t:`Сделка: продано за ${fmt(price)}, маржа ${fmt(m)}${hid.length?" · репутация упала из-за скрытых дефектов":""}`});
   closeThreads(c.id,"Машина уже продана.");S.cars=S.cars.filter(x=>x!==c)}
 function threadAct(d){const th=S.threads.find(x=>x.id===T);if(!th)return;terr="";const say=(f,t)=>{th.msgs.push({f,t});th.t=Date.now()};
   if(d.tdeal){say("me","Договорились.");complete(th,th.price)}
@@ -399,7 +399,7 @@ async function claimDaily(){if(dailyBusy)return;dailyBusy=true;drawDaily();
   try{const r=await apiCall("/api/daily","POST");daily=r;dailyMsg=`День ${r.day}: +${fmt(r.amount)}${r.vip?" и VIP на сутки 👑":""}`;confetti();haptic("success");await claimGrants()}
   catch(e){dailyMsg=e.message;loadDaily()}
   dailyBusy=false;giftDot();if(dailyOpen)drawDaily()}
-function confetti(){if(matchMedia("(prefers-reduced-motion:reduce)").matches)return;const C=["#3d7bff","#7b5cff","#ffd23f","#3ddc84","#ff6fb1","#ff6b5e"];
+function confetti(){sfx("win");if(matchMedia("(prefers-reduced-motion:reduce)").matches)return;const C=["#3d7bff","#7b5cff","#ffd23f","#3ddc84","#ff6fb1","#ff6b5e"];
   for(let i=0;i<70;i++){const c=document.createElement("i");c.className="cf";const x=(Math.random()-.5)*240;
     c.style.cssText=`left:${Math.random()*100}vw;background:${C[i%C.length]};--x:${x}px;--r:${Math.random()*900-450}deg;--d:${1.6+Math.random()*1.4}s;animation-delay:${Math.random()*.4}s`;
     document.body.appendChild(c);setTimeout(()=>c.remove(),3600)}}
@@ -476,7 +476,15 @@ function showBal(){const el=$("#bal"),to=S.bal;if(_balShown===null||matchMedia("
   el.classList.remove("up","down");void el.offsetWidth;el.classList.add(to>from?"up":"down");haptic(to>from?"success":"warning");
   const step=t=>{const k=Math.min(1,(t-t0)/D),e=1-Math.pow(1-k,3);el.textContent=fmt(Math.round(from+(to-from)*e));if(k<1)_balRaf=requestAnimationFrame(step);else setTimeout(()=>el.classList.remove("up","down"),400)};
   _balRaf=requestAnimationFrame(step)}
-function haptic(kind){try{const h=Telegram.WebApp.HapticFeedback;if(!h)return;kind==="tap"?h.impactOccurred("light"):h.notificationOccurred(kind)}catch(e){}}
+// ================= звуки (синтез Web Audio, без файлов) =================
+let SND=(()=>{try{return localStorage.getItem("perekup_snd")!=="0"}catch(e){return true}})(),AC=null;const sfxT={};
+function ac(){try{if(!AC)AC=new(window.AudioContext||window.webkitAudioContext)();if(AC.state==="suspended")AC.resume();return AC}catch(e){return null}}
+function tn(f,t,d,ty,v,f2){const c=ac();if(!c)return;const o=c.createOscillator(),g=c.createGain(),t0=c.currentTime+t;o.type=ty||"sine";o.frequency.setValueAtTime(f,t0);if(f2)o.frequency.exponentialRampToValueAtTime(f2,t0+d);
+  g.gain.setValueAtTime(.0001,t0);g.gain.exponentialRampToValueAtTime(v||.08,t0+.01);g.gain.exponentialRampToValueAtTime(.0001,t0+d);o.connect(g);g.connect(c.destination);o.start(t0);o.stop(t0+d+.02)}
+const SFX={tap:()=>tn(520,0,.05,"triangle",.04,380),success:()=>{tn(660,0,.12,"sine",.08);tn(880,.09,.16,"sine",.08);tn(1320,.18,.22,"sine",.06)},warning:()=>tn(300,0,.14,"triangle",.06,200),
+  error:()=>{tn(180,0,.12,"sawtooth",.05);tn(140,.1,.16,"sawtooth",.05)},coin:()=>{tn(988,0,.07,"square",.035);tn(1319,.07,.22,"square",.035)},win:()=>[523,659,784,1047,1319].forEach((f,i)=>tn(f,i*.09,.24,"sine",.08))};
+function sfx(n){if(!SND)return;const now=Date.now();if(now-(sfxT[n]||0)<(n==="tap"?30:250))return;sfxT[n]=now;try{SFX[n]&&SFX[n]()}catch(e){}}
+function haptic(kind){sfx(kind==="success"||kind==="warning"||kind==="error"?kind:"tap");try{const h=Telegram.WebApp.HapticFeedback;if(!h)return;kind==="tap"?h.impactOccurred("light"):h.notificationOccurred(kind)}catch(e){}}
 function render(){
   settle();ensureMarket();showBal();$("#vipb").textContent=vip()?"VIP":"";
   drawNav();
@@ -532,6 +540,7 @@ function vProfile(){
   <div class="gap"><button class="s" data-admsvc="1">Выдать сервис</button><button class="chip" data-admsvcrevoke="1">Забрать сервис</button></div>
   <div class="row" style="margin-top:10px"><b>Игроки</b><button class="chip" data-admload="1">Обновить</button></div>
   ${adm.users.map(u=>`<div class="row mute" data-admpick="${u.tg_id}" style="border-bottom:1px solid var(--line);padding:6px 0;cursor:pointer"><span>${esc(u.first_name)} ${u.username?"@"+esc(u.username):""} ${u.vip_until>Date.now()?'<span class="chip2">VIP</span>':""}</span><span class="n">${u.tg_id}</span></div>`).join("")}`:""}
+  <div class="gap"><button class="g" data-snd="1">${SND?"🔊 Звук: включён":"🔇 Звук: выключен"}</button></div>
   <div class="gap"><button class="g" data-reset="1">Начать заново</button></div>`;
 }
 // ================= модалка торга =================
@@ -577,6 +586,7 @@ function act(e){
   if(d.thread){T=+d.thread;terr="";S.threads.find(x=>x.id===T).unread=false;save();drawNav();drawThread();return}
   if(T&&!d.close){threadAct(d);return}
   if(d.close){closeM();return}
+  if(d.snd){SND=!SND;try{localStorage.setItem("perekup_snd",SND?"1":"0")}catch(e){}if(SND)sfx("success");render();return}
   if(d.reset){if(confirm("Удалить весь прогресс?")){localStorage.removeItem(KEY);location.reload()}return}
   if(H){const c=S.market.find(x=>x.id===H.id),s=S.sess[H.id];H.err="";
     if(d.arg){H.arg=H.arg===+d.arg?0:+d.arg;H.offer=+$("#offer").value}
@@ -585,8 +595,8 @@ function act(e){
       if(bl>Date.now())H.err="Продавец вас заблокировал";else if(s.att>=ATT)H.err="Попытки закончились";
       else{const dd=c.defects.find(x=>x.id===H.arg&&x.disc),arg=dd?dd.cost:0;s.att++;
         const r=haggle(o,c,floorP(c.ask,c.bot),s.att,arg,s.last);H.log.push(`Вы: ${fmt(o)}`,`${c.bot.name}: ${r.m}`);
-        if(r.k==="insult"){S.blocks[c.bot.name]=Date.now()+BLOCK;H.dead=true}else{s.agr=s.last=r.p;H.offer=r.p}}}
-    if(d.buy){const p=s.agr||c.ask;if(S.bal<0)H.err="Вы банкрот: сначала закройте долги";else if(S.bal<p)H.err="Не хватает денег";else{
+        if(r.k==="insult"){sfx("error");S.blocks[c.bot.name]=Date.now()+BLOCK;H.dead=true}else{s.agr=s.last=r.p;H.offer=r.p}}}
+    if(d.buy){sfx("coin");const p=s.agr||c.ask;if(S.bal<0)H.err="Вы банкрот: сначала закройте долги";else if(S.bal<p)H.err="Не хватает денег";else{
       S.bal-=p;S.bought++;S.market=S.market.filter(x=>x.id!==c.id);Object.assign(c,{status:"transit",until:Date.now()+2*TS,bought:p});S.cars.push(c);
       S.deals.unshift({kind:"buy",title:`${c.brand} ${c.model} ${c.year}`,price:p,margin:0,fraud:false});closeM();return}}
     save();drawHaggle();return}
