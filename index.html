@@ -482,7 +482,7 @@ function ac(){try{if(!AC)AC=new(window.AudioContext||window.webkitAudioContext)(
 function tn(f,t,d,ty,v,f2){const c=ac();if(!c)return;const o=c.createOscillator(),g=c.createGain(),t0=c.currentTime+t;o.type=ty||"sine";o.frequency.setValueAtTime(f,t0);if(f2)o.frequency.exponentialRampToValueAtTime(f2,t0+d);
   g.gain.setValueAtTime(.0001,t0);g.gain.exponentialRampToValueAtTime(v||.08,t0+.01);g.gain.exponentialRampToValueAtTime(.0001,t0+d);o.connect(g);g.connect(c.destination);o.start(t0);o.stop(t0+d+.02)}
 const SFX={tap:()=>tn(520,0,.05,"triangle",.04,380),success:()=>{tn(660,0,.12,"sine",.08);tn(880,.09,.16,"sine",.08);tn(1320,.18,.22,"sine",.06)},warning:()=>tn(300,0,.14,"triangle",.06,200),
-  error:()=>{tn(180,0,.12,"sawtooth",.05);tn(140,.1,.16,"sawtooth",.05)},coin:()=>{tn(988,0,.07,"square",.035);tn(1319,.07,.22,"square",.035)},win:()=>[523,659,784,1047,1319].forEach((f,i)=>tn(f,i*.09,.24,"sine",.08))};
+  error:()=>{tn(180,0,.12,"sawtooth",.05);tn(140,.1,.16,"sawtooth",.05)},coin:()=>{tn(784,0,.22,"sine",.028);tn(1047,.08,.3,"sine",.026)},win:()=>[523,659,784,1047,1319].forEach((f,i)=>tn(f,i*.09,.24,"sine",.08))};
 function sfx(n){if(!SND)return;const now=Date.now();if(now-(sfxT[n]||0)<(n==="tap"?30:250))return;sfxT[n]=now;try{SFX[n]&&SFX[n]()}catch(e){}}
 function haptic(kind){sfx(kind==="success"||kind==="warning"||kind==="error"?kind:"tap");try{const h=Telegram.WebApp.HapticFeedback;if(!h)return;kind==="tap"?h.impactOccurred("light"):h.notificationOccurred(kind)}catch(e){}}
 function render(){
